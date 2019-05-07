@@ -1,0 +1,122 @@
+trigger:
+- master
+
+jobs:
+  - job: Build
+    pool:
+      vmImage: 'Ubuntu-16.04'
+    strategy:
+      matrix:
+        TpmWolf:
+          Target: fTPM
+          Crypto: CFG_FTPM_USE_WOLF=y
+        TpmOSSL:
+          Target: fTPM
+          Crypto: CFG_FTPM_USE_WOLF=n
+        AuthvarsWolf:
+          Target: AuthVars
+          Crypto: CFG_AUTHVARS_USE_WOLF=y
+        AuthvarsOSSL:
+          Target: AuthVars
+          Crypto: CFG_AUTHVARS_USE_WOLF=n
+
+    steps:
+    - script: |
+        cd ..
+        git clone https://github.com/ms-iot/optee_os.git
+      displayName: Clone OP-TEE
+
+    - script: |
+        wget https://releases.linaro.org/components/toolchain/binaries/6.4-2017.11/arm-linux-gnueabihf/gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf.tar.xz
+        tar xf gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf.tar.xz
+      displayName: Download GCC
+    
+    - script: |
+        cd ../optee_os
+        CROSS_COMPILE=$(Build.SourcesDirectory)/gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf- make PLATFORM=imx-mx6qhmbedge CFG_TEE_CORE_LOG_LEVEL=4 CFG_REE_FS=n CFG_RPMB_FS=y CFG_RPMB_TESTKEY=y CFG_RPMB_WRITE_KEY=y CPPFLAGS="-fshort-wchar"
+      displayName: Build OP-TEE
+
+    - script: |
+        ls
+        cd TAs/optee_ta/$(Target)
+        make $(Crypto) TA_CPU=cortex-a9 TA_CROSS_COMPILE=$(Build.SourcesDirectory)/gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf- CROSS_COMPILE=$(Build.SourcesDirectory)/gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf- TA_DEV_KIT_DIR=$(Build.SourcesDirectory)/../optee_os/out/arm-plat-imx/export-ta_arm32
+      displayName: Build TA
+
+    - script: |
+        python3 external/build_cgmanifest.py external/cgmanifest_template.json
+        cat cgmanifest.json
+      displayName: Generate dynamic cgmanifest.json
+      
+    - task: ComponentGovernanceComponentDetection@0
+
+  - job: BuildQEMU
+    pool:
+      vmImage: 'Ubuntu-16.04'
+
+    steps:
+    - script: |
+        sudo dpkg --add-architecture i386
+        sudo apt-get update
+        sudo apt-get install android-tools-adb android-tools-fastboot autoconf automake bc bison build-essential cscope curl device-tree-compiler expect flex ftp-upload gdisk iasl libattr1-dev libc6:i386 libcap-dev libfdt-dev libftdi-dev libglib2.0-dev libhidapi-dev libncurses5-dev libpixman-1-dev libssl-dev libstdc++6:i386 libtool libz1:i386 make mtools netcat python-crypto python-serial python-wand unzip uuid-dev xdg-utils xterm xz-utils zlib1g-dev
+        mkdir ../google_repo
+        cd ../google_repo
+        curl https://storage.googleapis.com/git-repo-downloads/repo > repo
+        chmod a+x repo
+        ls
+      displayName: Install Tools
+
+    - script: |
+        cd ..
+        mkdir qemu
+        cd qemu
+        export PATH=$(pwd)/../google_repo:$PATH
+        repo init -u https://github.com/OP-TEE/manifest.git -m default.xml
+        repo sync -j50 --no-clone-bundle
+      displayName: Download QEMU
+
+    - script: |
+        cd ../qemu/build
+        make -j2 toolchains
+      displayName: Download QEMU Build Tools
+
+    - script: |
+        cd ../qemu/build
+        make -j2
+        cd ..
+        ls
+      displayName: Build QEMU
+
+    - task: PublishPipelineArtifact@0
+      inputs:
+        artifactName: 'qemu'
+        targetPath: '../qemu'
+
+  - job: RunQEMU
+    pool:
+      vmImage: 'Ubuntu-16.04'
+    strategy:
+      matrix:
+        TpmWolf:
+          Target: fTPM
+          Crypto: CFG_FTPM_USE_WOLF=y
+        TpmOSSL:
+          Target: fTPM
+          Crypto: CFG_FTPM_USE_WOLF=n
+        AuthvarsWolf:
+          Target: AuthVars
+          Crypto: CFG_AUTHVARS_USE_WOLF=y
+        AuthvarsOSSL:
+          Target: AuthVars
+          Crypto: CFG_AUTHVARS_USE_WOLF=n
+
+    dependsOn: BuildQEMU
+
+    steps:
+    - task: DownloadPipelineArtifact@1
+      inputs:
+        artifactName: 'qemu'
+        downloadPath: '../qemu'
+
+    - script: |
+        cd ../qemu
+        ls
