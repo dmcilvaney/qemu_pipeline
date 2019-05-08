@@ -5,6 +5,7 @@ jobs:
   - job: BuildQEMU
     pool:
       vmImage: 'Ubuntu-16.04'
+    timeoutInMinutes: 0
 
     steps:
     - script: |
@@ -18,9 +19,33 @@ jobs:
         ls
       displayName: Install Tools
 
+    - task: DownloadBuildArtifacts@0
+        displayName: 'Recover previous QEMU build'
+        inputs:
+          buildType: 'specific'
+          project: 'IOT'
+          pipeline: 'NXP QEMU testing pipeline'
+          allowPartiallySucceededBuilds: true
+          buildVersionToDownload: 'latest'
+          downloadType: 'single'
+          artifactName: 'QEMU-State'
+          downloadPath: '$(System.ArtifactsDirectory)'
+        continueOnError: true
+        condition: succeededOrFailed()
+
     - script: |
         cd ..
-        mkdir qemu
+        if [ -f $(System.ArtifactsDirectory)/qemu_state/qemu.tar.gz ]
+          tar -zxvf $(System.ArtifactsDirectory)/qemu-state/qemu.tar.gz -C .
+          ls
+          cd qemu
+          ls
+        else
+          mkdir qemu
+          ls
+          cd qemu
+          ls
+        fi
         cd qemu
         export PATH=$(pwd)/../google_repo:$PATH
         repo init -u https://github.com/OP-TEE/manifest.git -m default.xml
@@ -39,10 +64,15 @@ jobs:
         ls
       displayName: Build QEMU
 
+      - script: |
+        cd ..
+        tar -zcvf $(Build.ArtifactStagingDirectory)/qemu_state/qemu.tar.gz -C ./qemu
+      displayName: Compres QEMU
+
     - task: PublishPipelineArtifact@0
       inputs:
         artifactName: 'qemu'
-        targetPath: '../qemu'
+        targetPath: '$(Build.ArtifactStagingDirectory)/qemu_state/qemu.tar.gz'
 
   - job: RunQEMU
     pool:
@@ -65,10 +95,16 @@ jobs:
     dependsOn: BuildQEMU
 
     steps:
-    - task: DownloadPipelineArtifact@1
-      inputs:
-        artifactName: 'qemu'
-        downloadPath: '../qemu'
+    - task: DownloadBuildArtifacts@0
+        displayName: 'Recover previous QEMU build'
+        inputs:
+          buildType: 'current'
+          downloadType: 'single'
+          artifactName: 'QEMU-State'
+          downloadPath: '$(System.ArtifactsDirectory)'
+
+    - script: |
+        tar -zxvf $(System.ArtifactsDirectory)/qemu-state/qemu.tar.gz -C ../
 
     - script: |
         cd ../qemu
