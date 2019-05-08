@@ -62,19 +62,21 @@ jobs:
         make -j1
         cd ..
         ls
-      continueOnError: true
-      condition: succeededOrFailed()
+      continueOnError: 'true'
+      timeoutInMinutes: 20
       displayName: Build QEMU
 
     - script: |
         cd ..
         tar -zcvf $(Build.ArtifactStagingDirectory)/qemu_state/qemu.tar.gz -C ./qemu
+      condition: always()
       displayName: Compres QEMU
 
     - task: PublishPipelineArtifact@0
       inputs:
         artifactName: 'qemu'
         targetPath: '$(Build.ArtifactStagingDirectory)/qemu_state/qemu.tar.gz'
+      condition: always()
 
   - job: RunQEMU
     pool:
