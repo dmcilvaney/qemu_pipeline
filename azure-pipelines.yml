@@ -62,6 +62,8 @@ jobs:
         make -j1
         cd ..
         ls
+      continueOnError: true
+      condition: succeededOrFailed()
       displayName: Build QEMU
 
     - script: |
