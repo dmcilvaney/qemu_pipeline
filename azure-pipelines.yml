@@ -20,18 +20,18 @@ jobs:
       displayName: Install Tools
 
     - task: DownloadBuildArtifacts@0
-        displayName: 'Recover previous QEMU build'
-        inputs:
-          buildType: 'specific'
-          project: 'IOT'
-          pipeline: 'NXP QEMU testing pipeline'
-          allowPartiallySucceededBuilds: true
-          buildVersionToDownload: 'latest'
-          downloadType: 'single'
-          artifactName: 'QEMU-State'
-          downloadPath: '$(System.ArtifactsDirectory)'
-        continueOnError: true
-        condition: succeededOrFailed()
+      displayName: 'Recover previous QEMU build'
+      inputs:
+        buildType: 'specific'
+        project: 'IOT'
+        pipeline: 'NXP QEMU testing pipeline'
+        allowPartiallySucceededBuilds: true
+        buildVersionToDownload: 'latest'
+        downloadType: 'single'
+        artifactName: 'QEMU-State'
+        downloadPath: '$(System.ArtifactsDirectory)'
+      continueOnError: true
+      condition: succeededOrFailed()
 
     - script: |
         cd ..
