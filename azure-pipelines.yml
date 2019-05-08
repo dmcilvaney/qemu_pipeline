@@ -71,7 +71,7 @@ jobs:
         ls
         ls ./qemu/
         mkdir -p $(Build.ArtifactStagingDirectory)/qemu_state
-        tar -zcvf $(Build.ArtifactStagingDirectory)/qemu_state/qemu.tar.gz -C ./qemu/
+        tar -zcvf $(Build.ArtifactStagingDirectory)/qemu_state/qemu.tar.gz ./qemu
       condition: always()
       displayName: Compres QEMU
 
