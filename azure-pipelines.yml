@@ -63,7 +63,7 @@ jobs:
         cd ..
         ls
       continueOnError: 'true'
-      timeoutInMinutes: 20
+      timeoutInMinutes: 5
       displayName: Build QEMU
 
     - script: |
