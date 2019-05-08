@@ -59,7 +59,7 @@ jobs:
 
     - script: |
         cd ../qemu/build
-        make -j2
+        make -j1
         cd ..
         ls
       displayName: Build QEMU
