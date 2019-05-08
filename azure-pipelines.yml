@@ -64,7 +64,7 @@ jobs:
         ls
       displayName: Build QEMU
 
-      - script: |
+    - script: |
         cd ..
         tar -zcvf $(Build.ArtifactStagingDirectory)/qemu_state/qemu.tar.gz -C ./qemu
       displayName: Compres QEMU
