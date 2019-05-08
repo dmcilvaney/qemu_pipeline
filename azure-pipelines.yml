@@ -96,12 +96,12 @@ jobs:
 
     steps:
     - task: DownloadBuildArtifacts@0
-        displayName: 'Recover previous QEMU build'
-        inputs:
-          buildType: 'current'
-          downloadType: 'single'
-          artifactName: 'QEMU-State'
-          downloadPath: '$(System.ArtifactsDirectory)'
+      displayName: 'Recover previous QEMU build'
+      inputs:
+        buildType: 'current'
+        downloadType: 'single'
+        artifactName: 'QEMU-State'
+        downloadPath: '$(System.ArtifactsDirectory)'
 
     - script: |
         tar -zxvf $(System.ArtifactsDirectory)/qemu-state/qemu.tar.gz -C ../
