@@ -100,6 +100,10 @@ jobs:
 
     steps:
     - script: |
+        sudo apt-get install sshpass
+      displayName: Install tools
+
+    - script: |
         mkdir ../qemu
         tar xvf OE-CI-Ubuntu-16.04-AARCH64.tar.xz -C ../qemu --no-same-owner --strip-components=1
         cd ../qemu
