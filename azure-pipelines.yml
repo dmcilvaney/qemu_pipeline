@@ -147,7 +147,7 @@ jobs:
         echo $QEMU_CMD
 
         sshpass -p test ssh test@localhost -p 5555 "$QEMU_CMD"
-        if [ $? -ne 0]; then
+        if [ $? -ne 0 ]; then
           pkill -9 qemu-system-arr
           exit 1
         fi
