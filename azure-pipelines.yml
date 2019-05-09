@@ -101,6 +101,6 @@ jobs:
     steps:
     - script: |
         mkdir ../qemu
-        tar xvf OE-CI-Ubuntu-16.04-AARCH64.tar.xz ../qemu --no-same-owner
+        tar xvf OE-CI-Ubuntu-16.04-AARCH64.tar.xz -C ../qemu --stirp-components=1 --no-same-owner
         cd ../qemu
         ls
