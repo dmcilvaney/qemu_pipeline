@@ -79,6 +79,54 @@ jobs:
   #       artifactName: 'qemu'
   #       targetPath: '$(Build.ArtifactStagingDirectory)/qemu_state/qemu.tar.gz'
   #     condition: always()
+  - job: BuildTA
+    pool:
+      vmImage: 'Ubuntu-16.04'
+    strategy:
+      matrix:
+        TpmWolf:
+          Target: fTPM
+          Crypto: CFG_FTPM_USE_WOLF=y
+        TpmOSSL:
+          Target: fTPM
+          Crypto: CFG_FTPM_USE_WOLF=n
+        AuthvarsWolf:
+          Target: AuthVars
+          Crypto: CFG_AUTHVARS_USE_WOLF=y
+        AuthvarsOSSL:
+          Target: AuthVars
+          Crypto: CFG_AUTHVARS_USE_WOLF=n
+
+    steps:
+    - script: |
+        cd ..
+        git clone https://github.com/ms-iot/optee_os.git
+      displayName: Clone OP-TEE
+    - script: |
+        wget https://releases.linaro.org/components/toolchain/binaries/6.4-2017.11/arm-linux-gnueabihf/gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf.tar.xz
+        tar xf gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf.tar.xz
+      displayName: Download GCC
+    
+    - script: |
+        cd ../optee_os
+        CROSS_COMPILE=$(Build.SourcesDirectory)/gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf- make PLATFORM=imx-mx6qhmbedge CFG_TEE_CORE_LOG_LEVEL=4 CFG_REE_FS=n CFG_RPMB_FS=y CFG_RPMB_TESTKEY=y CFG_RPMB_WRITE_KEY=y CPPFLAGS="-fshort-wchar"
+      displayName: Build OP-TEE
+    - script: |
+        ls
+        cd TAs/optee_ta/$(Target)
+        make $(Crypto) TA_CPU=cortex-a9 TA_CROSS_COMPILE=$(Build.SourcesDirectory)/gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf- CROSS_COMPILE=$(Build.SourcesDirectory)/gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf- TA_DEV_KIT_DIR=$(Build.SourcesDirectory)/../optee_os/out/arm-plat-imx/export-ta_arm32
+      displayName: Build TA
+
+    - task: CopyFiles@2
+      inputs:
+        sourceFolder: '$(Build.SourcesDirectory)/TAs/optee_ta/out/$(Target)/'
+        contents: '*.ta'
+        targetFolder: '$(Build.ArtifactStagingDirectory)/ta'
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        artifactName: '$(Target)-$(Crypto)'
+        targetPath: '$(Build.ArtifactStagingDirectory)/ta'
 
   - job: RunQEMU
     pool:
@@ -101,7 +149,21 @@ jobs:
     steps:
     - script: |
         sudo apt-get install sshpass
+        wget https://developer.arm.com/-/media/Files/downloads/gnu-a/8.2-2019.01/gcc-arm-8.2-2019.01-x86_64-arm-linux-gnueabi.tar.xz
+        mkdir aarch32
+        tar xf gcc-arm-8.2-2019.01-x86_64-arm-linux-gnueabi.tar.xz -C aarch32 --strip-components=1
+        export PATH=$PATH:$(Build.SourcesDirectory)/aarch32/bin
       displayName: Install tools
+
+    - script: |
+        cd optee_client
+        make
+      displayName: Build optee_client
+
+    - script: |
+        cd ftpm_test
+        make CROSS_COMPILE=arm-linux-gnueabihf- PLATFORM=vexpress-qemu_virt TEEC_EXPORT=$(Build.SourcesDirectory)/optee_client/out/export/usr --no-builtin-variables
+      displayName: Build ftpm_test
 
     - script: |
         mkdir ../qemu
