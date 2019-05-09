@@ -101,6 +101,52 @@ jobs:
     steps:
     - script: |
         mkdir ../qemu
-        tar xvf OE-CI-Ubuntu-16.04-AARCH64.tar.xz -C ../qemu --no-same-owner
+        tar xvf OE-CI-Ubuntu-16.04-AARCH64.tar.xz -C ../qemu --no-same-owner --strip-components=1
         cd ../qemu
         ls
+      displayName: Extract QEMU binary
+
+    - script: |
+        cd ../qemu
+        nohup ./qemu-system-aarch64 \
+          -nographic \
+          -serial file:ree.log -serial file:tee.log \
+          -smp 1 \
+          -machine virt,secure=on -cpu cortex-a57 \
+          -m 1057 \
+          -bios bl1.bin \
+          -semihosting-config enable,target=native \
+          -d unimp \
+          -initrd rootfs.cpio.gz \
+          -kernel Image \
+          -no-acpi \
+          -append 'console=ttyAMA0,38400 keep_bootcon root=/dev/vda2' \
+          -netdev user,id=net0,hostfwd=tcp::5555-:22 -device virtio-net,netdev=net0 \
+          -virtfs local,id=sh0,path=$(Build.SourcesDirectory)/,security_model=passthrough,readonly,mount_tag=sh0 &
+        disown
+        
+        echo QEMU started
+        sleep 10
+        
+        echo Attempting to connect to QEMU
+        mkdir $HOME/.ssh
+        ssh-keyscan -T 300 -p 5555 localhost >> $HOME/.ssh/known_hosts
+
+        echo Contacting QEMU
+        QEMU_CMD="su -c \" \
+          mkdir /mnt/ci && \
+          mount -t 9p -o trans=virtio sh0 /mnt/ci -oversion9p2000.L && \
+          cp /mnt/ci/hello_world.txt /lib/optee_armtz && \
+          cat /lib/optee_armtz/hello_world.txt \
+        \"
+        echo "Command:"
+        echo $QEMU_CMD
+
+        sshpass -p test ssh test@localhost -p 5555 "$QEMU_CMD"
+        if [ $? -ne 0]; then
+          pkill -9 qemu-system-arr
+          exit 1
+        fi
+
+        echo "Done!"
+        pkill -9 qemu-system-arr
