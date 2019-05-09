@@ -112,7 +112,7 @@ jobs:
 
     - script: |
         cd ../qemu
-        nohup ./qemu-system-aarch64 \
+        ./qemu-system-aarch64 \
           -nographic \
           -serial file:ree.log -serial file:tee.log \
           -smp 1 \
@@ -127,8 +127,7 @@ jobs:
           -append 'console=ttyAMA0,38400 keep_bootcon root=/dev/vda2' \
           -netdev user,id=net0,hostfwd=tcp::5555-:22 -device virtio-net,netdev=net0 \
           -virtfs local,id=sh0,path=$(Build.SourcesDirectory)/,security_model=passthrough,readonly,mount_tag=sh0 &
-        disown
-        
+        QEMU_PID=$!
         echo QEMU started
         sleep 10
         
@@ -148,9 +147,9 @@ jobs:
 
         sshpass -p test ssh test@localhost -p 5555 "$QEMU_CMD"
         if [ $? -ne 0 ]; then
-          pkill -9 qemu-system-arr
+          kill QEMU_PID
           exit 1
         fi
 
         echo "Done!"
-        pkill -9 qemu-system-arr
+        kill QEMU_PID
