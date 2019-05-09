@@ -2,83 +2,83 @@ trigger:
 - master
 
 jobs:
-  - job: BuildQEMU
-    pool:
-      vmImage: 'Ubuntu-16.04'
-    timeoutInMinutes: 0
+  # - job: BuildQEMU
+  #   pool:
+  #     vmImage: 'Ubuntu-16.04'
+  #   timeoutInMinutes: 0
 
-    steps:
-    - script: |
-        sudo dpkg --add-architecture i386
-        sudo apt-get update
-        sudo apt-get install android-tools-adb android-tools-fastboot autoconf automake bc bison build-essential cscope curl device-tree-compiler expect flex ftp-upload gdisk iasl libattr1-dev libc6:i386 libcap-dev libfdt-dev libftdi-dev libglib2.0-dev libhidapi-dev libncurses5-dev libpixman-1-dev libssl-dev libstdc++6:i386 libtool libz1:i386 make mtools netcat python-crypto python-serial python-wand unzip uuid-dev xdg-utils xterm xz-utils zlib1g-dev
-        mkdir ../google_repo
-        cd ../google_repo
-        curl https://storage.googleapis.com/git-repo-downloads/repo > repo
-        chmod a+x repo
-        ls
-      displayName: Install Tools
+  #   steps:
+  #   - script: |
+  #       sudo dpkg --add-architecture i386
+  #       sudo apt-get update
+  #       sudo apt-get install android-tools-adb android-tools-fastboot autoconf automake bc bison build-essential cscope curl device-tree-compiler expect flex ftp-upload gdisk iasl libattr1-dev libc6:i386 libcap-dev libfdt-dev libftdi-dev libglib2.0-dev libhidapi-dev libncurses5-dev libpixman-1-dev libssl-dev libstdc++6:i386 libtool libz1:i386 make mtools netcat python-crypto python-serial python-wand unzip uuid-dev xdg-utils xterm xz-utils zlib1g-dev
+  #       mkdir ../google_repo
+  #       cd ../google_repo
+  #       curl https://storage.googleapis.com/git-repo-downloads/repo > repo
+  #       chmod a+x repo
+  #       ls
+  #     displayName: Install Tools
 
-    - task: DownloadBuildArtifacts@0
-      displayName: 'Recover previous QEMU build'
-      inputs:
-        buildType: 'specific'
-        project: 'IOT'
-        pipeline: 'NXP QEMU testing pipeline'
-        allowPartiallySucceededBuilds: true
-        buildVersionToDownload: 'latest'
-        downloadType: 'single'
-        artifactName: 'QEMU-State'
-        downloadPath: '$(System.ArtifactsDirectory)'
-      continueOnError: true
-      condition: succeededOrFailed()
+  #   - task: DownloadBuildArtifacts@0
+  #     displayName: 'Recover previous QEMU build'
+  #     inputs:
+  #       buildType: 'specific'
+  #       project: 'IOT'
+  #       pipeline: 'NXP QEMU testing pipeline'
+  #       allowPartiallySucceededBuilds: true
+  #       buildVersionToDownload: 'latest'
+  #       downloadType: 'single'
+  #       artifactName: 'QEMU-State'
+  #       downloadPath: '$(System.ArtifactsDirectory)'
+  #     continueOnError: true
+  #     condition: succeededOrFailed()
 
-    - script: |
-        cd ..
-        if [ -f $(System.ArtifactsDirectory)/qemu_state/qemu.tar.gz ]; then
-          tar -zxvf $(System.ArtifactsDirectory)/qemu-state/qemu.tar.gz -C .
-          ls
-          cd qemu
-          ls
-        else
-          mkdir qemu
-          ls
-          cd qemu
-          ls
-        fi
-        cd qemu
-        export PATH=$(pwd)/../google_repo:$PATH
-        repo init -u https://github.com/OP-TEE/manifest.git -m default.xml
-        repo sync -j50 --no-clone-bundle
-      displayName: Download QEMU
+  #   - script: |
+  #       cd ..
+  #       if [ -f $(System.ArtifactsDirectory)/qemu_state/qemu.tar.gz ]; then
+  #         tar -zxvf $(System.ArtifactsDirectory)/qemu-state/qemu.tar.gz -C .
+  #         ls
+  #         cd qemu
+  #         ls
+  #       else
+  #         mkdir qemu
+  #         ls
+  #         cd qemu
+  #         ls
+  #       fi
+  #       cd qemu
+  #       export PATH=$(pwd)/../google_repo:$PATH
+  #       repo init -u https://github.com/OP-TEE/manifest.git -m default.xml
+  #       repo sync -j50 --no-clone-bundle
+  #     displayName: Download QEMU
 
-    - script: |
-        cd ../qemu/build
-        make -j2 toolchains
-      displayName: Download QEMU Build Tools
+  #   - script: |
+  #       cd ../qemu/build
+  #       make -j2 toolchains
+  #     displayName: Download QEMU Build Tools
 
-    - script: |
-        cd ../qemu/build
-        make -j1
-        cd ..
-        ls
-      continueOnError: 'true'
-      displayName: Build QEMU
+  #   - script: |
+  #       cd ../qemu/build
+  #       make -j1
+  #       cd ..
+  #       ls
+  #     continueOnError: 'true'
+  #     displayName: Build QEMU
 
-    - script: |
-        cd ..
-        ls
-        ls ./qemu/
-        mkdir -p $(Build.ArtifactStagingDirectory)/qemu_state
-        tar -zcvf $(Build.ArtifactStagingDirectory)/qemu_state/qemu.tar.gz ./qemu
-      condition: always()
-      displayName: Compres QEMU
+  #   - script: |
+  #       cd ..
+  #       ls
+  #       ls ./qemu/
+  #       mkdir -p $(Build.ArtifactStagingDirectory)/qemu_state
+  #       tar -zcvf $(Build.ArtifactStagingDirectory)/qemu_state/qemu.tar.gz ./qemu
+  #     condition: always()
+  #     displayName: Compres QEMU
 
-    - task: PublishPipelineArtifact@0
-      inputs:
-        artifactName: 'qemu'
-        targetPath: '$(Build.ArtifactStagingDirectory)/qemu_state/qemu.tar.gz'
-      condition: always()
+  #   - task: PublishPipelineArtifact@0
+  #     inputs:
+  #       artifactName: 'qemu'
+  #       targetPath: '$(Build.ArtifactStagingDirectory)/qemu_state/qemu.tar.gz'
+  #     condition: always()
 
   - job: RunQEMU
     pool:
@@ -98,20 +98,8 @@ jobs:
           Target: AuthVars
           Crypto: CFG_AUTHVARS_USE_WOLF=n
 
-    dependsOn: BuildQEMU
-
-    steps:
-    - task: DownloadBuildArtifacts@0
-      displayName: 'Recover previous QEMU build'
-      inputs:
-        buildType: 'current'
-        downloadType: 'single'
-        artifactName: 'QEMU-State'
-        downloadPath: '$(System.ArtifactsDirectory)'
-
     - script: |
-        tar -zxvf $(System.ArtifactsDirectory)/qemu-state/qemu.tar.gz -C ../
-
-    - script: |
+        mkdir ../qemu
+        tar xvf OE-CI-Ubuntu-16.04-AARCH64.tar.xz ../qemu --no-same-owner
         cd ../qemu
         ls
