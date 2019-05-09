@@ -147,9 +147,9 @@ jobs:
 
         sshpass -p test ssh test@localhost -p 5555 "$QEMU_CMD"
         if [ $? -ne 0 ]; then
-          kill QEMU_PID
+          kill $QEMU_PID
           exit 1
         fi
 
         echo "Done!"
-        kill QEMU_PID
+        kill $QEMU_PID
