@@ -138,7 +138,7 @@ jobs:
           mount -t 9p -o trans=virtio sh0 /mnt/ci -oversion9p2000.L && \
           cp /mnt/ci/hello_world.txt /lib/optee_armtz && \
           cat /lib/optee_armtz/hello_world.txt \
-        \"
+        \""
         echo "Command:"
         echo $QEMU_CMD
 
