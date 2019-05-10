@@ -1,6 +1,0 @@
-[submodule "optee_client"]
-	path = optee_client
-	url = https://github.com/OP-TEE/optee_client.git
-[submodule "MSRSec"]
-	path = MSRSec
-	url = https://github.com/Microsoft/MSRSec

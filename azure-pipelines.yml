@@ -152,6 +152,7 @@ jobs:
         AuthvarsOSSL:
           Target: AuthVars
           Crypto: CFG_AUTHVARS_USE_WOLF=n
+    dependsOn: BuildTA
 
     steps:
     - script: |
@@ -163,14 +164,34 @@ jobs:
       displayName: Install tools
 
     - script: |
+        cd ..
+        git clone https://github.com/OP-TEE/optee_client.git
         cd optee_client
         make
       displayName: Build optee_client
 
     - script: |
         cd ftpm_test
-        make CROSS_COMPILE=arm-linux-gnueabihf- PLATFORM=vexpress-qemu_virt TEEC_EXPORT=$(Build.SourcesDirectory)/optee_client/out/export/usr --no-builtin-variables
+        make CROSS_COMPILE=arm-linux-gnueabihf- PLATFORM=vexpress-qemu_virt TEEC_EXPORT=$(Build.SourcesDirectory)/../optee_client/out/export/usr --no-builtin-variables
       displayName: Build ftpm_test
+
+    - task: DownloadBuildArtifacts@0
+      displayName: 'Download TA'
+      inputs:
+        artifactName: '$(Target)-$(Crypto)'
+        downloadPath: '$(System.ArtifactsDirectory)'
+
+    - task: CopyFiles@2
+      inputs:
+        sourceFolder: '$(System.ArtifactsDirectory)/ta'
+        contents: '*.ta'
+        targetFolder: '$(Build.SourcesDirectory)/mount'
+
+    - task: CopyFiles@2
+      inputs:
+        sourceFolder: '$(Build.SourcesDirectory)/ftpm_test/host/'
+        contents: 'ftpm_test'
+        targetFolder: '$(Build.SourcesDirectory)/mount'
 
     - script: |
         mkdir ../qemu
@@ -195,7 +216,7 @@ jobs:
           -no-acpi \
           -append 'console=ttyAMA0,38400 keep_bootcon root=/dev/vda2' \
           -netdev user,id=net0,hostfwd=tcp::5555-:22 -device virtio-net,netdev=net0 \
-          -virtfs local,id=sh0,path=$(Build.SourcesDirectory)/,security_model=passthrough,readonly,mount_tag=sh0 &
+          -virtfs local,id=sh0,path=$(Build.SourcesDirectory)/mount,security_model=passthrough,readonly,mount_tag=sh0 &
         QEMU_PID=$!
         echo QEMU started
         sleep 10
@@ -208,6 +229,7 @@ jobs:
         QEMU_CMD="su -c \" \
           mkdir /mnt/ci && \
           mount -t 9p -o trans=virtio sh0 /mnt/ci -oversion9p2000.L && \
+          ls /mnt/ci/ && \
           cp /mnt/ci/hello_world.txt /lib/optee_armtz && \
           cat /lib/optee_armtz/hello_world.txt \
         \""

@@ -1,2 +1,3 @@
 .vscode
 ftpm_test/host/ftpm_test
+ftpm_test/host/main.o
