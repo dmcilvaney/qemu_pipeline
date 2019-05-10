@@ -169,13 +169,13 @@ jobs:
         export PATH=$PATH:$(Build.SourcesDirectory)/aarch32/bin
         echo $PATH
         ls $(Build.SourcesDirectory)/aarch32/bin
-        make V=1
+        make CROSS_COMPILE=arm-linux-gnueabi-
       displayName: Build optee_client
 
     - script: |
         cd ftpm_test
         export PATH=$PATH:$(Build.SourcesDirectory)/aarch32/bin
-        make CROSS_COMPILE=arm-linux-gnueabihf- PLATFORM=vexpress-qemu_virt TEEC_EXPORT=$(Build.SourcesDirectory)/../optee_client/out/export/usr --no-builtin-variables
+        make CROSS_COMPILE=arm-linux-gnueabi- PLATFORM=vexpress-qemu_virt TEEC_EXPORT=$(Build.SourcesDirectory)/../optee_client/out/export/usr --no-builtin-variables
       displayName: Build ftpm_test
 
     - task: DownloadBuildArtifacts@0
