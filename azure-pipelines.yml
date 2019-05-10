@@ -152,7 +152,7 @@ jobs:
         AuthvarsOSSL:
           Target: AuthVars
           Crypto: CFG_AUTHVARS_USE_WOLF=n
-#    dependsOn: BuildTA
+    dependsOn: BuildTA
 
     steps:
     - script: |
