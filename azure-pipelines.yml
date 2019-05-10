@@ -167,7 +167,9 @@ jobs:
         git clone https://github.com/OP-TEE/optee_client.git
         cd optee_client
         export PATH=$PATH:$(Build.SourcesDirectory)/aarch32/bin
-        make
+        echo $PATH
+        ls $PATH:$(Build.SourcesDirectory)/aarch32/bin
+        make V=1
       displayName: Build optee_client
 
     - script: |
