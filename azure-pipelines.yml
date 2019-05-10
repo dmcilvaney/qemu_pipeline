@@ -185,12 +185,12 @@ jobs:
         downloadPath: '$(System.ArtifactsDirectory)'
 
     - script: |
-        ls $(System.ArtifactsDirectory)
-        ls $(System.ArtifactsDirectory)/ta
+        ls $(System.ArtifactsDirectory)/$(Target)-$(Crypto)
+        ls $(System.ArtifactsDirectory)/$(Target)-$(Crypto)/ta
 
     - task: CopyFiles@2
       inputs:
-        sourceFolder: '$(System.ArtifactsDirectory)/ta'
+        sourceFolder: '$(System.ArtifactsDirectory)/$(Target)-$(Crypto)/ta'
         contents: '*.ta'
         targetFolder: '$(Build.SourcesDirectory)/mount'
 
