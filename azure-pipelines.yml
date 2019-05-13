@@ -152,7 +152,7 @@ jobs:
         AuthvarsOSSL:
           Target: AuthVars
           Crypto: CFG_AUTHVARS_USE_WOLF=n
-#    dependsOn: BuildTA
+    dependsOn: BuildTA
 
     steps:
     - script: |
@@ -184,9 +184,13 @@ jobs:
         artifactName: '$(Target)-$(Crypto)'
         downloadPath: '$(System.ArtifactsDirectory)'
 
+    - script: |
+        ls $(System.ArtifactsDirectory)/$(Target)-$(Crypto)
+        ls $(System.ArtifactsDirectory)/$(Target)-$(Crypto)/ta
+
     - task: CopyFiles@2
       inputs:
-        sourceFolder: '$(System.ArtifactsDirectory)/ta'
+        sourceFolder: '$(System.ArtifactsDirectory)/$(Target)-$(Crypto)/ta'
         contents: '*.ta'
         targetFolder: '$(Build.SourcesDirectory)/mount'
 
