@@ -10,7 +10,7 @@ OBJS = main.o
 
 CFLAGS += -Wall -I../ta/include -I$(TEEC_EXPORT)/include -I./include
 #Add/link other required libraries here
-LDADD += -lteec -L$(TEEC_EXPORT)/lib
+LDADD += -l:teec -L$(TEEC_EXPORT)/lib
 
 BINARY = ftpm_test
 
