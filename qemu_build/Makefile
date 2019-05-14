@@ -1,8 +1,28 @@
 .ONESHELL:
 SHELL = bash
 
-.PHONY: all 32_tar 64_tar
+.PHONY: all 32_tar 64_tar run_32 run_64
 all: 32_tar 64_tar
+
+run_32: 32_tar
+	cd qemu_32_tar
+	./qemu-system-arm \
+	-nographic \
+	-serial file:ree.log -serial file:tee.log \
+	-smp 1 \
+	-machine virt -machine secure=on -cpu cortex-a15 \
+	-d unimp -semihosting-config enable,target=native \
+	-m 1057 \
+	-bios bl1.bin \
+	-kernel zImage \
+	-append 'console=ttyAMA0,38400 keep_bootcon root=/dev/vda2' -netdev user,id=net0,hostfwd=tcp::5555-:22 \
+	-device virtio-net,netdev=net0 \
+	-virtfs local,id=sh0,path=~,security_model=passthrough,readonly,mount_tag=sh0
+
+run_64: 32_tar
+	cd qemu_32_tar
+	echo "Not yet"
+	exit 1
 
 32_tar: qemu_32.tar.gz
 64_tar: qemu_64.targz
@@ -21,7 +41,7 @@ qemu_32.tar.gz: build_32
 	cp qemu_32/qemu/pc-bios/efi-virtio.rom qemu_32_tar/
 	cp qemu_32/arm-trusted-firmware/build/qemu/debug/fip.bin qemu_32_tar/ 
 	cp qemu_32/qemu/arm-softmmu/qemu-system-arm qemu_32_tar/ 
-	cp qemu_32/out/bin/rootfs.cpio.gz qemu_32_tar/
+	cp qemu_32/out-br/images/rootfs.cpio.gz qemu_32_tar/
 	tar -zcvf qemu_32.tar.gz ./qemu_32_tar
 
 qemu_64.tar.gz: build_64
@@ -37,7 +57,7 @@ qemu_64.tar.gz: build_64
 	cp qemu_64/qemu/pc-bios/efi-virtio.rom qemu_64_tar/
 	cp qemu_64/arm-trusted-firmware/build/qemu/debug/fip.bin qemu_64_tar/ 
 	cp qemu_64/qemu/arm-softmmu/qemu-system-arm qemu_64_tar/ 
-	cp qemu_64/out/bin/rootfs.cpio.gz qemu_64_tar/
+	cp qemu_64/out-br/bin/rootfs.cpio.gz qemu_64_tar/
 	tar -zcvf qemu_64.tar.gz ./qemu_64_tar
 
 .PHONY: build_32 build_64
