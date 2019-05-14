@@ -128,6 +128,7 @@ int main(void)
 	 * Run ftpm selftest
 	 */
 	TeecSharedMem.size = sizeof(Cmd) + sizeof(Res);
+	TeecSharedMem.flags = (TEEC_MEM_INPUT | TEEC_MEM_OUTPUT);
 	res = TEEC_AllocateSharedMemory(&ctx, &TeecSharedMem);
 	if (res != TEEC_SUCCESS)
 		errx(1, "TEEC_AllocateSharedMemory failed with code 0x%x origin 0x%x",
