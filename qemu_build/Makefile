@@ -1,8 +1,11 @@
 .ONESHELL:
 SHELL = bash
 
-.PHONY: all
-all: qemu_32.tar.gz qemu_64.tar.gz
+.PHONY: all 32_tar 64_tar
+all: 32_tar 64_tar
+
+32_tar: qemu_32.tar.gz
+64_tar: qemu_64.targz
 
 .PHONY: qemu_32.tar.gz qemu_64.targz
 qemu_32.tar.gz: build_32
@@ -46,8 +49,8 @@ build_32:
 	../google_repo/repo init -u https://github.com/OP-TEE/manifest.git -m default.xml
 	../google_repo/repo sync -j10 --no-clone-bundle
 	cd build
-	make -j2 toolchains
-	make -j10
+	$(MAKE) toolchains
+	$(MAKE)
 
 build_64:
 	mkdir -p qemu_64
@@ -55,12 +58,12 @@ build_64:
 	../google_repo/repo init -u https://github.com/OP-TEE/manifest.git -m qemu_v8.xml
 	../google_repo/repo sync -j10 --no-clone-bundle
 	cd build
-	make -j2 toolchains
-	make -j10
+	$(MAKE) toolchains
+	$(MAKE)
 
 google_repo/repo:
 	mkdir -p google_repo
-	curl https://storage.googleapis.com/git-repo-downloads/repo > google_repo/
+	curl https://storage.googleapis.com/git-repo-downloads/repo > google_repo/repo
 	chmod a+x google_repo/repo
 
 .PHONY: clean
