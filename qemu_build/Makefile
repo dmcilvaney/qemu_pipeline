@@ -66,9 +66,11 @@ build_32 build_64: google_repo/repo
 build_32:
 	mkdir -p qemu_32
 	cd qemu_32
-	../google_repo/repo init -u https://github.com/OP-TEE/manifest.git -m default.xml
-	../google_repo/repo sync -j10 --no-clone-bundle
+	../google_repo/repo init -u https://github.com/ms-iot/optee_manifest -m oe_default.xml -b oe-3.2.0
+	../google_repo/repo sync -j10
 	cd build
+	git fetch github
+	git checkout oe-ci-3.2.0
 	$(MAKE) toolchains
 	$(MAKE)
 
