@@ -1,4 +1,5 @@
 #!/bin/bash
+mkdir -p logs
 nohup ./qemu-system-arm \
     -nographic \
     -serial pty -serial pty \
@@ -7,39 +8,65 @@ nohup ./qemu-system-arm \
     -d unimp  -semihosting-config enable,target=native \
     -m 1057 \
     -bios bl1.bin \
-    -virtfs local,id=sh0,path=$QEMU_MOUNT_DIR,security_model=passthrough,readonly,mount_tag=sh0 \
-    > 2>&1 | grep --max-count=1 -o "/dev/pts/[^ ]*" > pts.txt \
+    -virtfs local,id=sh0,path=$QEMU_MOUNT_DIR,security_model=passthrough,readonly,mount_tag=sh0 > ./logs/qemu.log 2>&1 &
 
-QEMU_PID=$!
-QEMU_PTS=$(cat pts.txt)
+sleep 1
+QEMU_PTS=$(grep --max-count=2 -o "/dev/pts/[^ ]*" ./logs/qemu.log | sed -n 1p)
+TEE_PTS=$(grep --max-count=2 -o "/dev/pts/[^ ]*" ./logs/qemu.log | sed -n 2p)
 
+nohup cat $QEMU_PTS > ./logs/ree.log 2>&1 &
+CAT_PID=$!
+nohup cat $TEE_PTS > ./logs/tee.log 2>&1 &
+
+# Wait for QEMU to boot
 echo QEMU started
 sleep 20
 
-echo Attempting to connect to QEMU
+# Log into root account
+echo Attempting to connect to QEMU at $QEMU_PTS
 echo "root" > $QEMU_PTS
-sleep 10
+sleep 5
 
-QEMU_CMD=" \
+QEMU_TEST_FLAG="QEMU TEST COMPLETE"
+QEMU_CMD=" sleep 5 && \
     mkdir /mnt/ci && \
     mount -t 9p -o trans=virtio sh0 /mnt/ci -oversion9p2000.L && \
     cp /mnt/ci/*.ta /lib/optee_armtz && \
-    /mnt/ci/ftpm_test > test_results.txt && touch done_test || touch done_test \
-"
+    /mnt/ci/ftpm_test; echo $QEMU_TEST_FLAG"
 
-echo "Running command"
-echo $QEMU_CMD > $QEMU_PTS
+echo "Running command:"
+echo ""
+echo $QEMU_CMD
+echo ""
+echo "$QEMU_CMD" > $QEMU_PTS
 
-while [ -f $QEMU_MOUNT_DIR/done_test ]; do
-    echo "Waiting for tests to finish"
+#Seperate the results from the login and command logs
+sleep 1
+kill $CAT_PID
+wait $CAT_PID 2> /dev/null
+nohup cat $QEMU_PTS > ./logs/results.log 2>&1 &
+
+echo "Waiting for tests to finish"
+while ! grep "$QEMU_TEST_FLAG" ./logs/results.log > /dev/null; do
     sleep 5
 done
 
-if [ ! grep "fTPM TA selftest returned 0" $QEMU_MOUNT_DIR/test_results.txt ]; then
+if ! grep "fTPM TA selftest returned 0" ./logs/results.log > /dev/null; then
     echo "Test failed"
-    kill $QEMU_PI
+    echo ""
+    echo "REE:"
+    echo ""
+    cat ./logs/ree.log
+    echo ""
+    echo "TEE:"
+    echo ""
+    cat ./logs/tee.log
+    echo ""
+    echo "Results:"
+    echo ""
+    cat ./logs/results.log
     exit 1
 fi
 
 echo "Done!"
-kill $QEMU_PID
+cat ./logs/results.log
