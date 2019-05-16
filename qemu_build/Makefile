@@ -1,11 +1,17 @@
 .ONESHELL:
 SHELL = bash
 
-.PHONY: all 32_tar 64_tar run_32 run_64
-all: 32_tar 64_tar
+QEMU_MOUNT_DIR?=~/qemu_mnt
 
-run_32: 32_tar
-	cd qemu_32_tar
+.PHONY: all test update run_32 run_64
+all: update
+update: tar_32 tar_64
+test: test_32 test_64
+
+.PHONY: run_32 run_64 test_32 test_64
+run_32: | qemu_32.tar.gz
+	tar xf --overwrite qemu_32.tar.gz ./qemu_32_run
+	cd qemu_32_run
 	./qemu-system-arm \
 	-nographic \
 	-serial pty -serial pty \
@@ -16,16 +22,29 @@ run_32: 32_tar
 	-bios bl1.bin \
 	-virtfs local,id=sh0,path=/home/,security_model=passthrough,readonly,mount_tag=sh0
 
-run_64: 32_tar
-	cd qemu_32_tar
+test_32: | qemu_32.tar.gz
+	tar xf --overwrite qemu_32.tar.gz ./qemu_32_run
+	chmod a+x ../run_ftpm_test_32.sh
+	export QEMU_MOUNT_DIR=$(QEMU_MOUNT_DIR)
+	../run_ftpm_test_32.sh
+
+run_64: | qemu_64.tar.gz
+	tar xf --overwrite qemu_64.tar.gz ./qemu_64_run
+	cd qemu_64_run
 	echo "Not yet"
 	exit 1
 
-32_tar: qemu_32.tar.gz
-64_tar: qemu_64.targz
+test_64: | qemu_64.tar.gz
+	tar xf --overwrite qemu_64.tar.gz ./qemu_64_run
+	cd qemu_64_run
+	echo "Not yet"
+	exit 1
 
-.PHONY: qemu_32.tar.gz qemu_64.targz
-qemu_32.tar.gz: build_32
+.PHONY: tar_32 tar_64
+tar_32: qemu_32.tar.gz
+tar_64: qemu_64.tar.gz
+
+qemu_32.tar.gz: build_32 
 	mkdir -p qemu_32_tar
 	cp qemu_32/out/bin/bl1.bin qemu_32_tar/ 
 	cp qemu_32/out/bin/bl2.bin qemu_32_tar/ 
@@ -57,9 +76,7 @@ qemu_64.tar.gz: build_64
 	tar -zcvf qemu_64.tar.gz ./qemu_64_tar
 
 .PHONY: build_32 build_64
-build_32 build_64: google_repo/repo
-
-build_32:
+build_32: google_repo/repo
 	mkdir -p qemu_32
 	cd qemu_32
 	../google_repo/repo init -u https://github.com/ms-iot/optee_manifest -m oe_default.xml -b oe-3.2.0
@@ -70,7 +87,7 @@ build_32:
 	$(MAKE) toolchains
 	$(MAKE)
 
-build_64:
+build_64: google_repo/repo
 	mkdir -p qemu_64
 	cd qemu_64
 	../google_repo/repo init -u https://github.com/OP-TEE/manifest.git -m qemu_v8.xml
@@ -88,6 +105,8 @@ google_repo/repo:
 clean:
 	rm -rf qemu_32
 	rm -rf qemu_32_tar
+	rm -rf qemu_32_run
 	rm -rf qemu_64
 	rm -rf qemu_64_tar
+	rm -rf qemu_64_run
 	rm -rf google_repo
