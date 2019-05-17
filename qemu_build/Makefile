@@ -15,7 +15,7 @@ TAR_64_RULE=$(if $(wildcard $(TAR_64_NAME)),,$(TAR_64_NAME))
 
 .PHONY: run_32 run_64 test_32 test_64
 run_32: $(TAR_32_RULE)
-	tar xf --overwrite $(TAR_32_NAME) ./qemu_32_run
+	tar xf $(TAR_32_NAME) -C ./qemu_32_run
 	cd qemu_32_run
 	./qemu-system-arm \
 	-nographic \
@@ -28,19 +28,19 @@ run_32: $(TAR_32_RULE)
 	-virtfs local,id=sh0,path=/home/,security_model=passthrough,readonly,mount_tag=sh0
 
 test_32: $(TAR_32_RULE)
-	tar xf --overwrite $(TAR_32_NAME) ./qemu_32_run
+	tar xf $(TAR_32_NAME) -C ./qemu_32_run
 	chmod a+x ../run_ftpm_test_32.sh
 	export QEMU_MOUNT_DIR=$(QEMU_MOUNT_DIR)
 	../run_ftpm_test_32.sh
 
 run_64: $(TAR_64_RULE)
-	tar xf --overwrite $(TAR_64_NAME) ./qemu_64_run
+	tar xf $(TAR_64_NAME) -C ./qemu_64_run
 	cd qemu_64_run
 	echo "Not yet"
 	exit 1
 
 test_64: $(TAR_64_RULE)
-	tar xf --overwrite $(TAR_64_NAME) ./qemu_64_run
+	tar xf $(TAR_64_NAME) -C ./qemu_64_run
 	cd qemu_64_run
 	echo "Not yet"
 	exit 1
