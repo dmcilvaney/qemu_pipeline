@@ -8,9 +8,14 @@ all: update
 update: tar_32 tar_64
 test: test_32 test_64
 
+TAR_32_NAME=qemu_32.tar.gz
+TAR_64_RULE=qemu_64.tar.gz
+TAR_32_RULE=$(if $(wildcard $(TAR_32_NAME),,$(TAR_32_NAME)))
+TAR_64_RULE=$(if $(wildcard $(TAR_64_NAME),,$(TAR_64_NAME)))
+
 .PHONY: run_32 run_64 test_32 test_64
-run_32: | qemu_32.tar.gz
-	tar xf --overwrite qemu_32.tar.gz ./qemu_32_run
+run_32: $(TAR_32_RULE)
+	tar xf --overwrite $(TAR_32_NAME) ./qemu_32_run
 	cd qemu_32_run
 	./qemu-system-arm \
 	-nographic \
@@ -22,29 +27,29 @@ run_32: | qemu_32.tar.gz
 	-bios bl1.bin \
 	-virtfs local,id=sh0,path=/home/,security_model=passthrough,readonly,mount_tag=sh0
 
-test_32: | qemu_32.tar.gz
-	tar xf --overwrite qemu_32.tar.gz ./qemu_32_run
+test_32: $(TAR_32_RULE)
+	tar xf --overwrite $(TAR_32_NAME) ./qemu_32_run
 	chmod a+x ../run_ftpm_test_32.sh
 	export QEMU_MOUNT_DIR=$(QEMU_MOUNT_DIR)
 	../run_ftpm_test_32.sh
 
-run_64: | qemu_64.tar.gz
-	tar xf --overwrite qemu_64.tar.gz ./qemu_64_run
+run_64: $(TAR_64_RULE)
+	tar xf --overwrite $(TAR_64_NAME) ./qemu_64_run
 	cd qemu_64_run
 	echo "Not yet"
 	exit 1
 
-test_64: | qemu_64.tar.gz
-	tar xf --overwrite qemu_64.tar.gz ./qemu_64_run
+test_64: $(TAR_64_RULE)
+	tar xf --overwrite $(TAR_64_NAME) ./qemu_64_run
 	cd qemu_64_run
 	echo "Not yet"
 	exit 1
 
 .PHONY: tar_32 tar_64
-tar_32: qemu_32.tar.gz
-tar_64: qemu_64.tar.gz
+tar_32: $(TAR_32_NAME)
+tar_64: $(TAR_64_NAME)
 
-qemu_32.tar.gz: build_32 
+$(TAR_32_NAME): build_32 
 	mkdir -p qemu_32_tar
 	cp qemu_32/out/bin/bl1.bin qemu_32_tar/ 
 	cp qemu_32/out/bin/bl2.bin qemu_32_tar/ 
@@ -57,9 +62,9 @@ qemu_32.tar.gz: build_32
 	cp qemu_32/arm-trusted-firmware/build/qemu/debug/fip.bin qemu_32_tar/ 
 	cp qemu_32/qemu/arm-softmmu/qemu-system-arm qemu_32_tar/ 
 	cp qemu_32/out-br/images/rootfs.cpio.gz qemu_32_tar/
-	tar -zcvf qemu_32.tar.gz ./qemu_32_tar
+	tar -zcvf $(TAR_32_NAME) ./qemu_32_tar
 
-qemu_64.tar.gz: build_64
+$(TAR_64_NAME): build_64
 	mkdir -p qemu_64_tar
 	cp qemu_64/out/bin/zImage qemu_64_tar/
 	cp qemu_64/out/bin/bl1.bin qemu_64_tar/ 
@@ -73,7 +78,7 @@ qemu_64.tar.gz: build_64
 	cp qemu_64/arm-trusted-firmware/build/qemu/debug/fip.bin qemu_64_tar/ 
 	cp qemu_64/qemu/arm-softmmu/qemu-system-arm qemu_64_tar/ 
 	cp qemu_64/out-br/bin/rootfs.cpio.gz qemu_64_tar/
-	tar -zcvf qemu_64.tar.gz ./qemu_64_tar
+	tar -zcvf $(TAR_64_NAME) ./qemu_64_tar
 
 .PHONY: build_32 build_64
 build_32: google_repo/repo
