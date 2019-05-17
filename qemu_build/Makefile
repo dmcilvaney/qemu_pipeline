@@ -9,13 +9,14 @@ update: tar_32 tar_64
 test: test_32 test_64
 
 TAR_32_NAME=qemu_32.tar.gz
-TAR_64_RULE=qemu_64.tar.gz
+TAR_64_NAME=qemu_64.tar.gz
 TAR_32_RULE=$(if $(wildcard $(TAR_32_NAME)),,$(TAR_32_NAME))
 TAR_64_RULE=$(if $(wildcard $(TAR_64_NAME)),,$(TAR_64_NAME))
 
 .PHONY: run_32 run_64 test_32 test_64
 run_32: $(TAR_32_RULE)
-	tar xf $(TAR_32_NAME) -C ./qemu_32_run
+	mkdir -p ./qemu_32_run
+	tar xf $(TAR_32_NAME) -C ./qemu_32_run --strip-components=1
 	cd qemu_32_run
 	./qemu-system-arm \
 	-nographic \
@@ -28,19 +29,23 @@ run_32: $(TAR_32_RULE)
 	-virtfs local,id=sh0,path=/home/,security_model=passthrough,readonly,mount_tag=sh0
 
 test_32: $(TAR_32_RULE)
-	tar xf $(TAR_32_NAME) -C ./qemu_32_run
-	chmod a+x ../run_ftpm_test_32.sh
+	mkdir -p ./qemu_32_run
+	tar xf $(TAR_32_NAME) -C ./qemu_32_run --strip-components=1
+	cd qemu_32_run
+	chmod a+x ../../run_ftpm_test_32.sh
 	export QEMU_MOUNT_DIR=$(QEMU_MOUNT_DIR)
-	../run_ftpm_test_32.sh
+	../../run_ftpm_test_32.sh
 
 run_64: $(TAR_64_RULE)
-	tar xf $(TAR_64_NAME) -C ./qemu_64_run
+	mkdir -p ./qemu_64_run
+	tar xf $(TAR_64_NAME) -C ./qemu_64_run --strip-components=1
 	cd qemu_64_run
 	echo "Not yet"
 	exit 1
 
 test_64: $(TAR_64_RULE)
-	tar xf $(TAR_64_NAME) -C ./qemu_64_run
+	mkdir -p ./qemu_64_run
+	tar xf $(TAR_64_NAME) -C ./qemu_64_run --strip-components=1
 	cd qemu_64_run
 	echo "Not yet"
 	exit 1
@@ -62,7 +67,7 @@ $(TAR_32_NAME): build_32
 	cp qemu_32/arm-trusted-firmware/build/qemu/debug/fip.bin qemu_32_tar/ 
 	cp qemu_32/qemu/arm-softmmu/qemu-system-arm qemu_32_tar/ 
 	cp qemu_32/out-br/images/rootfs.cpio.gz qemu_32_tar/
-	tar -zcvf $(TAR_32_NAME) ./qemu_32_tar
+	tar -zcvf $(TAR_32_NAME) qemu_32_tar
 
 $(TAR_64_NAME): build_64
 	mkdir -p qemu_64_tar
@@ -78,7 +83,7 @@ $(TAR_64_NAME): build_64
 	cp qemu_64/arm-trusted-firmware/build/qemu/debug/fip.bin qemu_64_tar/ 
 	cp qemu_64/qemu/arm-softmmu/qemu-system-arm qemu_64_tar/ 
 	cp qemu_64/out-br/bin/rootfs.cpio.gz qemu_64_tar/
-	tar -zcvf $(TAR_64_NAME) ./qemu_64_tar
+	tar -zcvf $(TAR_64_NAME) qemu_64_tar
 
 .PHONY: build_32 build_64
 build_32: google_repo/repo
