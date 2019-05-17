@@ -10,8 +10,8 @@ test: test_32 test_64
 
 TAR_32_NAME=qemu_32.tar.gz
 TAR_64_RULE=qemu_64.tar.gz
-TAR_32_RULE=$(if $(wildcard $(TAR_32_NAME),,$(TAR_32_NAME)))
-TAR_64_RULE=$(if $(wildcard $(TAR_64_NAME),,$(TAR_64_NAME)))
+TAR_32_RULE=$(if $(wildcard $(TAR_32_NAME)),,$(TAR_32_NAME))
+TAR_64_RULE=$(if $(wildcard $(TAR_64_NAME)),,$(TAR_64_NAME))
 
 .PHONY: run_32 run_64 test_32 test_64
 run_32: $(TAR_32_RULE)
