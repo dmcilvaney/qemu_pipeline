@@ -89,7 +89,7 @@ $(TAR_64_NAME): build_64
 build_32: google_repo/repo
 	mkdir -p qemu_32
 	cd qemu_32
-	../google_repo/repo init -u https://github.com/OP-TEE/manifest.git -m default_stable.xml
+	../google_repo/repo init -u https://github.com/OP-TEE/manifest.git -m default.xml
 	../google_repo/repo sync -j10
 	cd build
 	$(MAKE) toolchains
@@ -98,7 +98,7 @@ build_32: google_repo/repo
 build_64: google_repo/repo
 	mkdir -p qemu_64
 	cd qemu_64
-	../google_repo/repo init -u https://github.com/OP-TEE/manifest.git -m qemu_v8_stable.xml
+	../google_repo/repo init -u https://github.com/OP-TEE/manifest.git -m qemu_v8.xml
 	../google_repo/repo sync -j10 --no-clone-bundle
 	cd build
 	$(MAKE) toolchains
