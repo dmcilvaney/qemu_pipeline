@@ -16,6 +16,6 @@ jobs:
           az storage blob download \
           --container-name qemuimages \
           --name hello_world.txt \
-          $(System.ArtifactsDirectory)/hw.txt
+          -- file $(System.ArtifactsDirectory)/hw.txt
 
     - script: cat $(System.ArtifactsDirectory)/hw.txt
