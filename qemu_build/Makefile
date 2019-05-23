@@ -57,8 +57,9 @@ test_64: $(TAR_64_RULE)
 	mkdir -p ./qemu_64_run
 	tar xf $(TAR_64_NAME) -C ./qemu_64_run --strip-components=1
 	cd qemu_64_run
-	echo "Not yet"
-	exit 1
+	chmod a+x ../../run_ftpm_test_64.sh
+	export QEMU_MOUNT_DIR=$(QEMU_MOUNT_DIR)
+	../../run_ftpm_test_64.sh
 
 .PHONY: tar_32 tar_64
 tar_32: $(TAR_32_NAME)
