@@ -7,7 +7,15 @@ jobs:
       vmImage: 'Ubuntu-16.04'
 
     steps:
-    - script: |
-        cd ..
-        git clone https://github.com/ms-iot/optee_os.git
-      displayName: Clone OP-TEE
+    - task: AzureCLI@1
+      displayName: 'Azure CLI '
+      inputs:
+        azureSubscription: 'Cosine IOT Services Azure Internal Consumption (f9cb372a-8903-4370-9ce0-3042e3bb2cc8)'
+        scriptLocation: inlineScript
+        inlineScript: |
+          az storage blob download \
+          --container-name qemuimages \
+          --name hello_world.txt \
+          $(System.ArtifactsDirectory)/hw.txt
+
+    - script: cat $(System.ArtifactsDirectory)/hw.txt
