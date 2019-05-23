@@ -2,84 +2,7 @@ trigger:
 - master
 
 jobs:
-  # - job: BuildQEMU
-  #   pool:
-  #     vmImage: 'Ubuntu-16.04'
-  #   timeoutInMinutes: 0
-
-  #   steps:
-  #   - script: |
-  #       sudo dpkg --add-architecture i386
-  #       sudo apt-get update
-  #       sudo apt-get install android-tools-adb android-tools-fastboot autoconf automake bc bison build-essential cscope curl device-tree-compiler expect flex ftp-upload gdisk iasl libattr1-dev libc6:i386 libcap-dev libfdt-dev libftdi-dev libglib2.0-dev libhidapi-dev libncurses5-dev libpixman-1-dev libssl-dev libstdc++6:i386 libtool libz1:i386 make mtools netcat python-crypto python-serial python-wand unzip uuid-dev xdg-utils xterm xz-utils zlib1g-dev
-  #       mkdir ../google_repo
-  #       cd ../google_repo
-  #       curl https://storage.googleapis.com/git-repo-downloads/repo > repo
-  #       chmod a+x repo
-  #       ls
-  #     displayName: Install Tools
-
-  #   - task: DownloadBuildArtifacts@0
-  #     displayName: 'Recover previous QEMU build'
-  #     inputs:
-  #       buildType: 'specific'
-  #       project: 'IOT'
-  #       pipeline: 'NXP QEMU testing pipeline'
-  #       allowPartiallySucceededBuilds: true
-  #       buildVersionToDownload: 'latest'
-  #       downloadType: 'single'
-  #       artifactName: 'QEMU-State'
-  #       downloadPath: '$(System.ArtifactsDirectory)'
-  #     continueOnError: true
-  #     condition: succeededOrFailed()
-
-  #   - script: |
-  #       cd ..
-  #       if [ -f $(System.ArtifactsDirectory)/qemu_state/qemu.tar.gz ]; then
-  #         tar -zxvf $(System.ArtifactsDirectory)/qemu-state/qemu.tar.gz -C .
-  #         ls
-  #         cd qemu
-  #         ls
-  #       else
-  #         mkdir qemu
-  #         ls
-  #         cd qemu
-  #         ls
-  #       fi
-  #       cd qemu
-  #       export PATH=$(pwd)/../google_repo:$PATH
-  #       repo init -u https://github.com/OP-TEE/manifest.git -m default.xml
-  #       repo sync -j50 --no-clone-bundle
-  #     displayName: Download QEMU
-
-  #   - script: |
-  #       cd ../qemu/build
-  #       make -j2 toolchains
-  #     displayName: Download QEMU Build Tools
-
-  #   - script: |
-  #       cd ../qemu/build
-  #       make -j1
-  #       cd ..
-  #       ls
-  #     continueOnError: 'true'
-  #     displayName: Build QEMU
-
-  #   - script: |
-  #       cd ..
-  #       ls
-  #       ls ./qemu/
-  #       mkdir -p $(Build.ArtifactStagingDirectory)/qemu_state
-  #       tar -zcvf $(Build.ArtifactStagingDirectory)/qemu_state/qemu.tar.gz ./qemu
-  #     condition: always()
-  #     displayName: Compres QEMU
-
-  #   - task: PublishPipelineArtifact@0
-  #     inputs:
-  #       artifactName: 'qemu'
-  #       targetPath: '$(Build.ArtifactStagingDirectory)/qemu_state/qemu.tar.gz'
-  #     condition: always()
-  - job: BuildTA
+  - job: BuildTA32
     pool:
       vmImage: 'Ubuntu-16.04'
     strategy:
@@ -96,6 +19,9 @@ jobs:
         AuthvarsOSSL:
           Target: AuthVars
           Crypto: CFG_AUTHVARS_USE_WOLF=n
+
+    variables:
+      Arch: 32
 
     steps:
     - script: |
@@ -132,10 +58,10 @@ jobs:
 
     - task: PublishBuildArtifacts@1
       inputs:
-        artifactName: '$(Target)-$(Crypto)'
+        artifactName: '$(Target)-$(Crypto)-$(Arch)'
         targetPath: '$(Build.ArtifactStagingDirectory)/ta'
 
-  - job: RunQEMU
+  - job: RunQEMU32
     pool:
       vmImage: 'Ubuntu-16.04'
     strategy:
@@ -152,45 +78,48 @@ jobs:
         AuthvarsOSSL:
           Target: AuthVars
           Crypto: CFG_AUTHVARS_USE_WOLF=n
-    dependsOn: BuildTA
+      
+    dependsOn: BuildTA32
+
+    variables:
+      Arch: 32
 
     steps:
     - script: |
-        sudo apt-get install sshpass
-        wget https://developer.arm.com/-/media/Files/downloads/gnu-a/8.2-2019.01/gcc-arm-8.2-2019.01-x86_64-arm-linux-gnueabi.tar.xz
-        mkdir aarch32
-        tar xf gcc-arm-8.2-2019.01-x86_64-arm-linux-gnueabi.tar.xz -C aarch32 --strip-components=1
-      displayName: Install tools
+        wget https://releases.linaro.org/components/toolchain/binaries/6.4-2017.11/arm-linux-gnueabihf/gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf.tar.xz
+        mkdir toolchain
+        tar xf gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf.tar.xz -C toolchain --strip-components=1
+      displayName: Install 32bit tools
 
     - script: |
         cd ..
         git clone https://github.com/OP-TEE/optee_client.git
         cd optee_client
-        export PATH=$PATH:$(Build.SourcesDirectory)/aarch32/bin
+        export PATH=$PATH:$(Build.SourcesDirectory)/toolchain/bin
         echo $PATH
-        ls $(Build.SourcesDirectory)/aarch32/bin
+        ls $(Build.SourcesDirectory)/toolchain/bin
         make CROSS_COMPILE=arm-linux-gnueabi-
       displayName: Build optee_client
 
     - script: |
         cd ftpm_test
-        export PATH=$PATH:$(Build.SourcesDirectory)/aarch32/bin
+        export PATH=$PATH:$(Build.SourcesDirectory)/toolchain/bin
         make CROSS_COMPILE=arm-linux-gnueabi- PLATFORM=vexpress-qemu_virt TEEC_EXPORT=$(Build.SourcesDirectory)/../optee_client/out/export/usr --no-builtin-variables
       displayName: Build ftpm_test
 
     - task: DownloadBuildArtifacts@0
       displayName: 'Download TA'
       inputs:
-        artifactName: '$(Target)-$(Crypto)'
+        artifactName: '$(Target)-$(Crypto)-$(Arch)'
         downloadPath: '$(System.ArtifactsDirectory)'
 
     - script: |
-        ls $(System.ArtifactsDirectory)/$(Target)-$(Crypto)
-        ls $(System.ArtifactsDirectory)/$(Target)-$(Crypto)/ta
+        ls $(System.ArtifactsDirectory)/$(Target)-$(Crypto)-$(Arch)
+        ls $(System.ArtifactsDirectory)/$(Target)-$(Crypto)-$(Arch)/ta
 
     - task: CopyFiles@2
       inputs:
-        sourceFolder: '$(System.ArtifactsDirectory)/$(Target)-$(Crypto)/ta'
+        sourceFolder: '$(System.ArtifactsDirectory)/$(Target)-$(Crypto)-$(Arch)/ta'
         contents: '*.ta'
         targetFolder: '$(Build.SourcesDirectory)/mount'
 
@@ -202,52 +131,12 @@ jobs:
 
     - script: |
         mkdir ../qemu
-        tar xvf OE-CI-Ubuntu-16.04-AARCH64.tar.xz -C ../qemu --no-same-owner --strip-components=1
+        tar xvf qemu_32.tar.xz -C ../qemu --no-same-owner --strip-components=1
         cd ../qemu
         ls
-      displayName: Extract QEMU binary
+      displayName: Extract QEMU binaries
 
     - script: |
-        cd ../qemu
-        ./qemu-system-aarch64 \
-          -nographic \
-          -serial file:ree.log -serial file:tee.log \
-          -smp 1 \
-          -machine virt,secure=on -cpu cortex-a57 \
-          -m 1057 \
-          -bios bl1.bin \
-          -semihosting-config enable,target=native \
-          -d unimp \
-          -initrd rootfs.cpio.gz \
-          -kernel Image \
-          -no-acpi \
-          -append 'console=ttyAMA0,38400 keep_bootcon root=/dev/vda2' \
-          -netdev user,id=net0,hostfwd=tcp::5555-:22 -device virtio-net,netdev=net0 \
-          -virtfs local,id=sh0,path=$(Build.SourcesDirectory)/mount,security_model=passthrough,readonly,mount_tag=sh0 &
-        QEMU_PID=$!
-        echo QEMU started
-        sleep 10
-        
-        echo Attempting to connect to QEMU
-        mkdir $HOME/.ssh
-        ssh-keyscan -T 300 -p 5555 localhost >> $HOME/.ssh/known_hosts
-
-        echo Contacting QEMU
-        QEMU_CMD="su -c \" \
-          mkdir /mnt/ci && \
-          mount -t 9p -o trans=virtio sh0 /mnt/ci -oversion9p2000.L && \
-          ls /mnt/ci/ && \
-          cp /mnt/ci/hello_world.txt /lib/optee_armtz && \
-          cat /lib/optee_armtz/hello_world.txt \
-        \""
-        echo "Command:"
-        echo $QEMU_CMD
-
-        sshpass -p test ssh test@localhost -p 5555 "$QEMU_CMD"
-        if [ $? -ne 0 ]; then
-          kill $QEMU_PID
-          exit 1
-        fi
-
-        echo "Done!"
-        kill $QEMU_PID
+        cd qemu_build
+        export $QEMU_MOUNT_DIR=$(Build.SourcesDirectory)/mount
+        ../run_ftpm_test_32.sh
