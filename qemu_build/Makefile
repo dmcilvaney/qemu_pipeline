@@ -89,8 +89,8 @@ $(TAR_64_NAME): build_64
 	cp qemu_64/out/bin/bl33.bin qemu_64_tar/ 
 	cp qemu_64/linux/arch/arm64/boot/Image qemu_64_tar/
 	cp qemu_64/qemu/pc-bios/efi-virtio.rom qemu_64_tar/
-	cp qemu_64/arm-trusted-firmware/build/qemu/debug/fip.bin qemu_64_tar/ 
-	cp qemu_64/qemu/arm-softmmu/qemu-system-aarch64 qemu_64_tar/ 
+	cp qemu_64/arm-trusted-firmware/build/qemu/release/fip.bin qemu_64_tar/ 
+	cp qemu_64/qemu/aarch64-softmmu/qemu-system-aarch64 qemu_64_tar/ 
 	cp qemu_64/out-br/images/rootfs.cpio.gz qemu_64_tar/
 	tar -zcvf $(TAR_64_NAME) qemu_64_tar
 
