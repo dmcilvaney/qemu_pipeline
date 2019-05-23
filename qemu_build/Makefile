@@ -40,8 +40,18 @@ run_64: $(TAR_64_RULE)
 	mkdir -p ./qemu_64_run
 	tar xf $(TAR_64_NAME) -C ./qemu_64_run --strip-components=1
 	cd qemu_64_run
-	echo "Not yet"
-	exit 1
+	./qemu-system-aarch64 \
+	-nographic \
+	-serial pty -serial pty \
+	-smp 1 \
+	-machine virt -machine secure=on -cpu cortex-a57 \
+	-d unimp -semihosting-config enable,target=native \
+	-m 1057 \
+	-bios bl1.bin \
+	-initrd rootfs.cpio.gz \
+	-kernel Image -no-acpi \
+	-append 'console=ttyAMA0,38400 keep_bootcon root=/dev/vda2' \
+	-virtfs local,id=sh0,path=/home/,security_model=passthrough,readonly,mount_tag=sh0
 
 test_64: $(TAR_64_RULE)
 	mkdir -p ./qemu_64_run
@@ -71,18 +81,17 @@ $(TAR_32_NAME): build_32
 
 $(TAR_64_NAME): build_64
 	mkdir -p qemu_64_tar
-	cp qemu_64/out/bin/zImage qemu_64_tar/
 	cp qemu_64/out/bin/bl1.bin qemu_64_tar/ 
 	cp qemu_64/out/bin/bl2.bin qemu_64_tar/ 
 	cp qemu_64/out/bin/bl32.bin qemu_64_tar/ 
 	cp qemu_64/out/bin/bl32_extra1.bin qemu_64_tar/ 
 	cp qemu_64/out/bin/bl32_extra2.bin qemu_64_tar/
 	cp qemu_64/out/bin/bl33.bin qemu_64_tar/ 
-	cp qemu_64/linux/arch/arm/boot/Imag qemu_64_tar/ 
+	cp qemu_64/linux/arch/arm64/boot/Image qemu_64_tar/
 	cp qemu_64/qemu/pc-bios/efi-virtio.rom qemu_64_tar/
 	cp qemu_64/arm-trusted-firmware/build/qemu/debug/fip.bin qemu_64_tar/ 
-	cp qemu_64/qemu/arm-softmmu/qemu-system-arm qemu_64_tar/ 
-	cp qemu_64/out-br/bin/rootfs.cpio.gz qemu_64_tar/
+	cp qemu_64/qemu/arm-softmmu/qemu-system-aarch64 qemu_64_tar/ 
+	cp qemu_64/out-br/images/rootfs.cpio.gz qemu_64_tar/
 	tar -zcvf $(TAR_64_NAME) qemu_64_tar
 
 .PHONY: build_32 build_64
