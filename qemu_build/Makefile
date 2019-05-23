@@ -83,6 +83,7 @@ $(TAR_64_NAME): build_64
 	mkdir -p qemu_64_tar
 	cp qemu_64/out/bin/bl1.bin qemu_64_tar/ 
 	cp qemu_64/out/bin/bl2.bin qemu_64_tar/ 
+	cp qemu_64/out/bin/bl31.bin qemu_64_tar/ 
 	cp qemu_64/out/bin/bl32.bin qemu_64_tar/ 
 	cp qemu_64/out/bin/bl32_extra1.bin qemu_64_tar/ 
 	cp qemu_64/out/bin/bl32_extra2.bin qemu_64_tar/
