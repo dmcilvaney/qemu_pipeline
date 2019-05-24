@@ -135,7 +135,7 @@ jobs:
         azureSubscription: 'Cosine IOT Services Azure Internal Consumption (f9cb372a-8903-4370-9ce0-3042e3bb2cc8)'
         scriptLocation: inlineScript
         inlineScript: |
-          az storage blob download 
+          az storage blob download \
           --container-name qemuimages \
           --name qemu_32.tar.gz \
           --file $(Build.SourcesDirectory)/qemu_32.tar.gz
