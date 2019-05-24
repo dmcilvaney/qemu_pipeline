@@ -21,7 +21,7 @@ jobs:
           Crypto: CFG_AUTHVARS_USE_WOLF=n
 
     variables:
-      Arch: 32
+      TestArch: 32
 
     steps:
     - script: |
@@ -58,7 +58,7 @@ jobs:
 
     - task: PublishBuildArtifacts@1
       inputs:
-        artifactName: '$(Target)-$(Crypto)-$(Arch)'
+        artifactName: '$(Target)-$(Crypto)-$(TestArch)'
         targetPath: '$(Build.ArtifactStagingDirectory)/ta'
 
   - job: RunQEMU32
@@ -82,7 +82,7 @@ jobs:
     dependsOn: BuildTA32
 
     variables:
-      Arch: 32
+      TestArch: 32
 
     steps:
     - script: |
@@ -110,16 +110,16 @@ jobs:
     - task: DownloadBuildArtifacts@0
       displayName: 'Download TA'
       inputs:
-        artifactName: '$(Target)-$(Crypto)-$(Arch)'
+        artifactName: '$(Target)-$(Crypto)-$(TestArch)'
         downloadPath: '$(System.ArtifactsDirectory)'
 
     - script: |
-        ls $(System.ArtifactsDirectory)/$(Target)-$(Crypto)-$(Arch)
-        ls $(System.ArtifactsDirectory)/$(Target)-$(Crypto)-$(Arch)/ta
+        ls $(System.ArtifactsDirectory)/$(Target)-$(Crypto)-$(TestArch)
+        ls $(System.ArtifactsDirectory)/$(Target)-$(Crypto)-$(TestArch)/ta
 
     - task: CopyFiles@2
       inputs:
-        sourceFolder: '$(System.ArtifactsDirectory)/$(Target)-$(Crypto)-$(Arch)/ta'
+        sourceFolder: '$(System.ArtifactsDirectory)/$(Target)-$(Crypto)-$(TestArch)/ta'
         contents: '*.ta'
         targetFolder: '$(Build.SourcesDirectory)/mount'
 
