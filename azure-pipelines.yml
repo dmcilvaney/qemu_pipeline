@@ -144,3 +144,10 @@ jobs:
     - script: |
         cd qemu_build
         make test_32 QEMU_MOUNT_DIR=$(Build.SourcesDirectory)/mount
+
+    - script: |
+        cd qemu_build/qemu_32_run/logs
+        ls
+        cat tee.log
+        cat ree.log
+        cat results.log
