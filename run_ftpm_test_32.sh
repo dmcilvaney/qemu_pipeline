@@ -3,6 +3,11 @@
 set -e
 
 mkdir -p logs
+echo "QEMU LOG:" > ./logs/qemu.log
+echo "REE LOG:" > ./logs/ree.log
+echo "TEE LOG:" > ./logs/tee.log
+echo "RESULTS LOG:" > ./logs/tee.log
+
 nohup ./qemu-system-arm \
     -nographic \
     -serial pty -serial pty \
@@ -11,15 +16,15 @@ nohup ./qemu-system-arm \
     -d unimp  -semihosting-config enable,target=native \
     -m 1057 \
     -bios bl1.bin \
-    -virtfs local,id=sh0,path=$QEMU_MOUNT_DIR,security_model=passthrough,readonly,mount_tag=sh0 > ./logs/qemu.log 2>&1 &
+    -virtfs local,id=sh0,path=$QEMU_MOUNT_DIR,security_model=passthrough,readonly,mount_tag=sh0 >> ./logs/qemu.log 2>&1 &
 
 sleep 1
 QEMU_PTS=$(grep --max-count=2 -o "/dev/pts/[^ ]*" ./logs/qemu.log | sed -n 1p)
 TEE_PTS=$(grep --max-count=2 -o "/dev/pts/[^ ]*" ./logs/qemu.log | sed -n 2p)
 
-nohup cat $QEMU_PTS > ./logs/ree.log 2>&1 &
+nohup cat $QEMU_PTS >> ./logs/ree.log 2>&1 &
 CAT_PID=$!
-nohup cat $TEE_PTS > ./logs/tee.log 2>&1 &
+nohup cat $TEE_PTS >> ./logs/tee.log 2>&1 &
 
 # Wait for QEMU to boot
 echo QEMU started

@@ -2,64 +2,64 @@ trigger:
 - master
 
 jobs:
-  - job: BuildTA32
-    pool:
-      vmImage: 'Ubuntu-16.04'
-    strategy:
-      matrix:
-        TpmWolf:
-          Target: fTPM
-          Crypto: CFG_FTPM_USE_WOLF=y
-        TpmOSSL:
-          Target: fTPM
-          Crypto: CFG_FTPM_USE_WOLF=n
-        AuthvarsWolf:
-          Target: AuthVars
-          Crypto: CFG_AUTHVARS_USE_WOLF=y
-        AuthvarsOSSL:
-          Target: AuthVars
-          Crypto: CFG_AUTHVARS_USE_WOLF=n
+  # - job: BuildTA32
+  #   pool:
+  #     vmImage: 'Ubuntu-16.04'
+  #   strategy:
+  #     matrix:
+  #       TpmWolf:
+  #         Target: fTPM
+  #         Crypto: CFG_FTPM_USE_WOLF=y
+  #       TpmOSSL:
+  #         Target: fTPM
+  #         Crypto: CFG_FTPM_USE_WOLF=n
+  #       AuthvarsWolf:
+  #         Target: AuthVars
+  #         Crypto: CFG_AUTHVARS_USE_WOLF=y
+  #       AuthvarsOSSL:
+  #         Target: AuthVars
+  #         Crypto: CFG_AUTHVARS_USE_WOLF=n
 
-    variables:
-      TestArch: 32
+  #   variables:
+  #     TestArch: 32
 
-    steps:
-    - script: |
-        cd ..
-        git clone https://github.com/ms-iot/optee_os.git
-      displayName: Clone OP-TEE
+  #   steps:
+  #   - script: |
+  #       cd ..
+  #       git clone https://github.com/ms-iot/optee_os.git
+  #     displayName: Clone OP-TEE
 
-    - script: |
-        cd ..
-        git clone https://github.com/microsoft/MSRsec.git
-      displayName: Clone TAs
+  #   - script: |
+  #       cd ..
+  #       git clone https://github.com/microsoft/MSRsec.git
+  #     displayName: Clone TAs
 
-    - script: |
-        wget https://releases.linaro.org/components/toolchain/binaries/6.4-2017.11/arm-linux-gnueabihf/gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf.tar.xz
-        tar xf gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf.tar.xz
-      displayName: Download GCC
+  #   - script: |
+  #       wget https://releases.linaro.org/components/toolchain/binaries/6.4-2017.11/arm-linux-gnueabihf/gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf.tar.xz
+  #       tar xf gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf.tar.xz
+  #     displayName: Download GCC
     
-    - script: |
-        cd ../optee_os
-        CROSS_COMPILE=$(Build.SourcesDirectory)/gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf- make PLATFORM=imx-mx6qhmbedge CFG_TEE_CORE_LOG_LEVEL=4 CFG_REE_FS=n CFG_RPMB_FS=y CFG_RPMB_TESTKEY=y CFG_RPMB_WRITE_KEY=y CPPFLAGS="-fshort-wchar"
-      displayName: Build OP-TEE
+  #   - script: |
+  #       cd ../optee_os
+  #       CROSS_COMPILE=$(Build.SourcesDirectory)/gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf- make PLATFORM=imx-mx6qhmbedge CFG_TEE_CORE_LOG_LEVEL=4 CFG_REE_FS=n CFG_RPMB_FS=y CFG_RPMB_TESTKEY=y CFG_RPMB_WRITE_KEY=y CPPFLAGS="-fshort-wchar"
+  #     displayName: Build OP-TEE
 
-    - script: |
-        cd ../MSRsec
-        cd TAs/optee_ta/$(Target)
-        make $(Crypto) TA_CPU=cortex-a9 TA_CROSS_COMPILE=$(Build.SourcesDirectory)/gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf- CROSS_COMPILE=$(Build.SourcesDirectory)/gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf- TA_DEV_KIT_DIR=$(Build.SourcesDirectory)/../optee_os/out/arm-plat-imx/export-ta_arm32
-      displayName: Build TA
+  #   - script: |
+  #       cd ../MSRsec
+  #       cd TAs/optee_ta/$(Target)
+  #       make $(Crypto) TA_CPU=cortex-a9 TA_CROSS_COMPILE=$(Build.SourcesDirectory)/gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf- CROSS_COMPILE=$(Build.SourcesDirectory)/gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf- TA_DEV_KIT_DIR=$(Build.SourcesDirectory)/../optee_os/out/arm-plat-imx/export-ta_arm32
+  #     displayName: Build TA
 
-    - task: CopyFiles@2
-      inputs:
-        sourceFolder: '$(Build.SourcesDirectory)/../MSRsec/TAs/optee_ta/out/$(Target)/'
-        contents: '*.ta'
-        targetFolder: '$(Build.ArtifactStagingDirectory)/ta'
+  #   - task: CopyFiles@2
+  #     inputs:
+  #       sourceFolder: '$(Build.SourcesDirectory)/../MSRsec/TAs/optee_ta/out/$(Target)/'
+  #       contents: '*.ta'
+  #       targetFolder: '$(Build.ArtifactStagingDirectory)/ta'
 
-    - task: PublishBuildArtifacts@1
-      inputs:
-        artifactName: '$(Target)-$(Crypto)-$(TestArch)'
-        targetPath: '$(Build.ArtifactStagingDirectory)/ta'
+  #   - task: PublishBuildArtifacts@1
+  #     inputs:
+  #       artifactName: '$(Target)-$(Crypto)-$(TestArch)'
+  #       targetPath: '$(Build.ArtifactStagingDirectory)/ta'
 
   - job: RunQEMU32
     pool:
@@ -107,11 +107,11 @@ jobs:
         make CROSS_COMPILE=arm-linux-gnueabihf- PLATFORM=vexpress-qemu_virt TEEC_EXPORT=$(Build.SourcesDirectory)/../optee_client/out/export/usr --no-builtin-variables
       displayName: Build ftpm_test
 
-    - task: DownloadBuildArtifacts@0
-      displayName: 'Download TA'
-      inputs:
-        artifactName: '$(Target)-$(Crypto)-$(TestArch)'
-        downloadPath: '$(System.ArtifactsDirectory)'
+    # - task: DownloadBuildArtifacts@0
+    #   displayName: 'Download TA'
+    #   inputs:
+    #     artifactName: '$(Target)-$(Crypto)-$(TestArch)'
+    #     downloadPath: '$(System.ArtifactsDirectory)'
 
     - script: |
         ls $(System.ArtifactsDirectory)/$(Target)-$(Crypto)-$(TestArch)
@@ -149,6 +149,7 @@ jobs:
     - script: |
         cd qemu_build/qemu_32_run/logs
         ls
+        cat qemu.log
         cat tee.log
         cat ree.log
         cat results.log
