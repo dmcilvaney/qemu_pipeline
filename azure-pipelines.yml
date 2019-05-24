@@ -85,27 +85,27 @@ jobs:
       TestArch: 32
 
     steps:
-    - script: |
-        wget https://releases.linaro.org/components/toolchain/binaries/6.4-2017.11/arm-linux-gnueabihf/gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf.tar.xz
-        mkdir toolchain
-        tar xf gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf.tar.xz -C toolchain --strip-components=1
-      displayName: Install 32bit tools
+    # - script: |
+    #     wget https://releases.linaro.org/components/toolchain/binaries/6.4-2017.11/arm-linux-gnueabihf/gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf.tar.xz
+    #     mkdir toolchain
+    #     tar xf gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf.tar.xz -C toolchain --strip-components=1
+    #   displayName: Install 32bit tools
 
-    - script: |
-        cd ..
-        git clone https://github.com/OP-TEE/optee_client.git
-        cd optee_client
-        export PATH=$PATH:$(Build.SourcesDirectory)/toolchain/bin
-        echo $PATH
-        ls $(Build.SourcesDirectory)/toolchain/bin
-        make CROSS_COMPILE=arm-linux-gnueabihf-
-      displayName: Build optee_client
+    # - script: |
+    #     cd ..
+    #     git clone https://github.com/OP-TEE/optee_client.git
+    #     cd optee_client
+    #     export PATH=$PATH:$(Build.SourcesDirectory)/toolchain/bin
+    #     echo $PATH
+    #     ls $(Build.SourcesDirectory)/toolchain/bin
+    #     make CROSS_COMPILE=arm-linux-gnueabihf-
+    #   displayName: Build optee_client
 
-    - script: |
-        cd ftpm_test
-        export PATH=$PATH:$(Build.SourcesDirectory)/toolchain/bin
-        make CROSS_COMPILE=arm-linux-gnueabihf- PLATFORM=vexpress-qemu_virt TEEC_EXPORT=$(Build.SourcesDirectory)/../optee_client/out/export/usr --no-builtin-variables
-      displayName: Build ftpm_test
+    # - script: |
+    #     cd ftpm_test
+    #     export PATH=$PATH:$(Build.SourcesDirectory)/toolchain/bin
+    #     make CROSS_COMPILE=arm-linux-gnueabihf- PLATFORM=vexpress-qemu_virt TEEC_EXPORT=$(Build.SourcesDirectory)/../optee_client/out/export/usr --no-builtin-variables
+    #   displayName: Build ftpm_test
 
     # - task: DownloadBuildArtifacts@0
     #   displayName: 'Download TA'
@@ -113,21 +113,21 @@ jobs:
     #     artifactName: '$(Target)-$(Crypto)-$(TestArch)'
     #     downloadPath: '$(System.ArtifactsDirectory)'
 
-    - script: |
-        ls $(System.ArtifactsDirectory)/$(Target)-$(Crypto)-$(TestArch)
-        ls $(System.ArtifactsDirectory)/$(Target)-$(Crypto)-$(TestArch)/ta
+    # - script: |
+    #     ls $(System.ArtifactsDirectory)/$(Target)-$(Crypto)-$(TestArch)
+    #     ls $(System.ArtifactsDirectory)/$(Target)-$(Crypto)-$(TestArch)/ta
 
-    - task: CopyFiles@2
-      inputs:
-        sourceFolder: '$(System.ArtifactsDirectory)/$(Target)-$(Crypto)-$(TestArch)/ta'
-        contents: '*.ta'
-        targetFolder: '$(Build.SourcesDirectory)/mount'
+    # - task: CopyFiles@2
+    #   inputs:
+    #     sourceFolder: '$(System.ArtifactsDirectory)/$(Target)-$(Crypto)-$(TestArch)/ta'
+    #     contents: '*.ta'
+    #     targetFolder: '$(Build.SourcesDirectory)/mount'
 
-    - task: CopyFiles@2
-      inputs:
-        sourceFolder: '$(Build.SourcesDirectory)/ftpm_test/host/'
-        contents: 'ftpm_test'
-        targetFolder: '$(Build.SourcesDirectory)/mount'
+    # - task: CopyFiles@2
+    #   inputs:
+    #     sourceFolder: '$(Build.SourcesDirectory)/ftpm_test/host/'
+    #     contents: 'ftpm_test'
+    #     targetFolder: '$(Build.SourcesDirectory)/mount'
 
     - task: AzureCLI@1
       displayName: 'Download QEMU'
