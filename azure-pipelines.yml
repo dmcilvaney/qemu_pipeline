@@ -144,6 +144,7 @@ jobs:
     - script: |
         cd qemu_build
         make test_32 QEMU_MOUNT_DIR=$(Build.SourcesDirectory)/mount
+      timeoutInMinutes: 5
 
     - script: |
         cd qemu_build/qemu_32_run/logs
@@ -151,3 +152,4 @@ jobs:
         cat tee.log
         cat ree.log
         cat results.log
+      condition: always()
