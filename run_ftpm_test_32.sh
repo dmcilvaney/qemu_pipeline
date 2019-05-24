@@ -52,7 +52,7 @@ sleep 1
 echo "Switching output files (killing $CAT_PID)"
 kill $CAT_PID
 echo "Killed"
-wait $CAT_PID 2> /dev/null
+wait $CAT_PID 2> /dev/null || echo "Wait for kill failed?"
 echo "RESULTS LOG:" > ./logs/tee.log
 nohup cat $QEMU_PTS >> ./logs/results.log 2>&1 &
 
