@@ -132,10 +132,11 @@ jobs:
     - task: AzureCLI@1
       displayName: 'Download QEMU'
       inputs:
-        azureSubscription: 'Cosine IOT Services Azure Internal Consumption (f9cb372a-8903-4370-9ce0-3042e3bb2cc8)'
+        azureSubscription: 'Silicon team: Cosine IOT Services Azure Internal Consumption'
         scriptLocation: inlineScript
         inlineScript: |
           az storage blob download \
+          --account-name siliconqemu \
           --container-name qemuimages \
           --name qemu_32.tar.gz \
           --file $(Build.SourcesDirectory)/qemu_32.tar.gz
