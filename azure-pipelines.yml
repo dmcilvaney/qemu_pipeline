@@ -129,14 +129,17 @@ jobs:
         contents: 'ftpm_test'
         targetFolder: '$(Build.SourcesDirectory)/mount'
 
-    - script: |
-        mkdir ../qemu
-        tar xvf qemu_32.tar.xz -C ../qemu --no-same-owner --strip-components=1
-        cd ../qemu
-        ls
-      displayName: Extract QEMU binaries
+    - task: AzureCLI@1
+      displayName: 'Download QEMU'
+      inputs:
+        azureSubscription: 'Cosine IOT Services Azure Internal Consumption (f9cb372a-8903-4370-9ce0-3042e3bb2cc8)'
+        scriptLocation: inlineScript
+        inlineScript: |
+          az storage blob download 
+          --container-name qemuimages \
+          --name qemu_32.tar.gz \
+          --file $(Build.SourcesDirectory)/qemu_32.tar.gz
 
     - script: |
         cd qemu_build
-        export $QEMU_MOUNT_DIR=$(Build.SourcesDirectory)/mount
-        ../run_ftpm_test_32.sh
+        make test_32 QEMU_MOUNT_DIR=$(Build.SourcesDirectory)/mount

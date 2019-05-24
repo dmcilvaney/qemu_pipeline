@@ -1,3 +1,11 @@
 .vscode
 ftpm_test/host/ftpm_test
 ftpm_test/host/main.o
+qemu_build/qemu_32/
+qemu_build/qemu_64/
+qemu_build/qemu_32_run/
+qemu_build/qemu_64_run/
+qemu_build/qemu_32_tar/
+qemu_build/qemu_64_tar/
+qemu_64.tar.gz
+qemu_32.tar.gz
