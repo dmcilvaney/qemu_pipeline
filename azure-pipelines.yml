@@ -147,7 +147,7 @@ jobs:
 
     - script: |
         cd qemu_build
-        make test_32 QEMU_MOUNT_DIR=$(Build.SourcesDirectory)/mount
+        sudo make test_32 QEMU_MOUNT_DIR=$(Build.SourcesDirectory)/mount
       timeoutInMinutes: 5
 
     - script: |

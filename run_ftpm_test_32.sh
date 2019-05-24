@@ -6,7 +6,6 @@ mkdir -p logs
 echo "QEMU LOG:" > ./logs/qemu.log
 echo "REE LOG:" > ./logs/ree.log
 echo "TEE LOG:" > ./logs/tee.log
-echo "RESULTS LOG:" > ./logs/tee.log
 
 nohup ./qemu-system-arm \
     -nographic \
@@ -47,12 +46,15 @@ echo ""
 echo $QEMU_CMD
 echo ""
 echo "$QEMU_CMD" > $QEMU_PTS
-
+echo "Command sent"
 #Seperate the results from the login and command logs
 sleep 1
+echo "Switching output files (killing $CAT_PID)"
 kill $CAT_PID
+echo "Killed"
 wait $CAT_PID 2> /dev/null
-nohup cat $QEMU_PTS > ./logs/results.log 2>&1 &
+echo "RESULTS LOG:" > ./logs/tee.log
+nohup cat $QEMU_PTS >> ./logs/results.log 2>&1 &
 
 echo "Waiting for tests to finish"
 while ! grep "$QEMU_TEST_FLAG" ./logs/results.log > /dev/null; do
