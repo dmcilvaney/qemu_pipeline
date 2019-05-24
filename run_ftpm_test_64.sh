@@ -1,4 +1,7 @@
 #!/bin/bash
+
+set -e
+
 mkdir -p logs
 nohup ./qemu-system-aarch64 \
     -nographic \
