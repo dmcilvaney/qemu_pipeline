@@ -78,8 +78,8 @@ jobs:
 #        AuthvarsOSSL:
 #          Target: AuthVars
 #          Crypto: CFG_AUTHVARS_USE_WOLF=n
-      
-    dependsOn: BuildTA32
+#      
+#    dependsOn: BuildTA32
 
     variables:
       TestArch: 32
