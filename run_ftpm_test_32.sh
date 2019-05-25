@@ -12,7 +12,7 @@ mkfifo /tmp/ree.in /tmp/ree.out /tmp/tee.in /tmp/tee.out
 
 nohup ./qemu-system-arm \
     -nographic \
-    -serial pipe:/tmp/ree -serial pipe:/tmp/ree \
+    -serial pipe:/tmp/ree -serial pipe:/tmp/tee \
     -smp 1 \
     -machine virt -machine secure=on -cpu cortex-a15 \
     -d unimp  -semihosting-config enable,target=native \
@@ -27,7 +27,9 @@ nohup cat /tmp/tee.out >> ./logs/tee.log 2>&1 &
 
 # Wait for QEMU to boot
 echo QEMU started
-sleep 20
+while ! grep "buildroot login:" ./logs/ree.log > /dev/null; do
+    sleep 1
+done
 
 # Log into root account
 echo Attempting to connect to QEMU at /tmp/ree.in
