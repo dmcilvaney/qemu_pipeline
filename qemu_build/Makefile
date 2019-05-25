@@ -1,7 +1,7 @@
 .ONESHELL:
 SHELL = bash
 
-QEMU_MOUNT_DIR?=~/qemu_mnt
+QEMU_MOUNT_DIR?=$(abspath ~/qemu_mnt)
 
 .PHONY: all test update run_32 run_64
 all: update
