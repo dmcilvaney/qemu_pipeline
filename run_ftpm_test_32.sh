@@ -9,8 +9,8 @@ mkfifo /tmp/ree_32.in /tmp/ree_32.out /tmp/tee_32.in /tmp/tee_32.out
 
 echo "REE LOG:" > ./logs/ree.log
 echo "TEE LOG:" > ./logs/tee.log
-nohup cat /tmp/ree_32.out >> ./logs/ree_32.log 2>&1 &
-nohup cat /tmp/tee_32.out >> ./logs/tee_32.log 2>&1 &
+nohup cat /tmp/ree_32.out >> ./logs/ree.log 2>&1 &
+nohup cat /tmp/tee_32.out >> ./logs/tee.log 2>&1 &
 
 echo "QEMU LOG:" > ./logs/qemu.log
 
@@ -54,8 +54,8 @@ echo "Command sent"
 #Seperate the results from the login and command logs
 sleep 1
 
-echo "RESULTS LOG:" > ./logs/reults.log
-nohup tail -f -n 0 /tmp/ree_32.in >> ./logs/results.log 2>&1 &
+echo "RESULTS LOG:" > ./logs/results.log
+nohup tail -f -n 0 /tmp/ree_32.out >> ./logs/results.log 2>&1 &
 
 echo "Waiting for tests to finish"
 while ! grep "$QEMU_TEST_FLAG" ./logs/results.log > /dev/null; do
