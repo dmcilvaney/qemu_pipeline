@@ -13,7 +13,9 @@ nohup cat /tmp/ree.out >> ./logs/ree.log 2>&1 &
 nohup cat /tmp/tee.out >> ./logs/tee.log 2>&1 &
 
 echo "QEMU LOG:" > ./logs/qemu.log
-nohup ./qemu-system-arm \
+
+echo "Mounting directory at $QEMU_MOUNT_DIR"
+QEMU_CMD = "./qemu-system-arm \
     -nographic \
     -serial pipe:/tmp/ree -serial pipe:/tmp/tee \
     -smp 1 \
@@ -21,7 +23,9 @@ nohup ./qemu-system-arm \
     -d unimp  -semihosting-config enable,target=native \
     -m 1057 \
     -bios bl1.bin \
-    -virtfs local,id=sh0,path=$QEMU_MOUNT_DIR,security_model=passthrough,readonly,mount_tag=sh0 >> ./logs/qemu.log 2>&1 &
+    -fsdev local,id=fsdev0,path=$QEMU_MOUNT_DIR,security_model=none -device virtio-9p-device,fsdev=fsdev0,mount_tag=host"
+echo "Command:  $QEMU_CMD" >> ./logs/qemu.log
+nohup QEMU_CMD >> ./logs/qemu.log 2>&1 &
 
 # Wait for QEMU to boot
 echo QEMU started
