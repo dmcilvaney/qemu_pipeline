@@ -15,7 +15,7 @@ nohup cat /tmp/tee.out >> ./logs/tee.log 2>&1 &
 echo "QEMU LOG:" > ./logs/qemu.log
 
 echo "Mounting directory at $QEMU_MOUNT_DIR"
-QEMU_CMD = "./qemu-system-arm \
+QEMU_CMD="./qemu-system-arm \
     -nographic \
     -serial pipe:/tmp/ree -serial pipe:/tmp/tee \
     -smp 1 \
