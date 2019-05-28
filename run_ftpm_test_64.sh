@@ -55,12 +55,12 @@ echo "Command sent"
 #Seperate the results from the login and command logs
 sleep 1
 
-echo "RESULTS LOG:" > ./logs/tee.log
-nohup tail -f -n 0 /tmp/ree_64.out >> ./logs/results.log 2>&1 &
+echo "RESULTS LOG:" > ./logs/results.log
+nohup tail -f -n 0 ./logs/ree.log >> ./logs/results.log &
 
 echo "Waiting for tests to finish"
 while ! grep "$QEMU_TEST_FLAG" ./logs/results.log > /dev/null; do
-    sleep 5
+    sleep 1
 done
 
 if ! grep "fTPM TA selftest returned 0" ./logs/results.log > /dev/null; then
