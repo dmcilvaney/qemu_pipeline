@@ -25,7 +25,7 @@ QEMU_CMD = "./qemu-system-arm \
     -bios bl1.bin \
     -fsdev local,id=fsdev0,path=$QEMU_MOUNT_DIR,security_model=none -device virtio-9p-device,fsdev=fsdev0,mount_tag=host"
 echo "Command:  $QEMU_CMD" >> ./logs/qemu.log
-nohup QEMU_CMD >> ./logs/qemu.log 2>&1 &
+nohup $QEMU_CMD >> ./logs/qemu.log 2>&1 &
 
 # Wait for QEMU to boot
 echo QEMU started
