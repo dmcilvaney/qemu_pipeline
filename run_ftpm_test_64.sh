@@ -2,22 +2,27 @@
 
 set -e
 
+# Local files are available in /mnt/ci/
+TEST_COMMAND="cp /mnt/ci/*.ta /lib/optee_armtz && /mnt/ci/ftpm_test"
+GOOD_RESULT="fTPM TA selftest returned 0"
+
+REE_PIPE=/tmp/ree_64
+TEE_PIP=/tmp/tee_64
+rm -f $REE_PIPE.in $REE_PIPE.out $TEE_PIPE.in $TEE_PIPE.out
+mkfifo $REE_PIPE.in $REE_PIPE.out $TEE_PIPE.in $TEE_PIPE.out
+
 mkdir -p logs
-
-rm -f /tmp/ree_64.in /tmp/ree_64.out /tmp/tee_64.in /tmp/tee_64.out
-mkfifo /tmp/ree_64.in /tmp/ree_64.out /tmp/tee_64.in /tmp/tee_64.out
-
 echo "REE LOG:" > ./logs/ree.log
 echo "TEE LOG:" > ./logs/tee.log
-nohup cat /tmp/ree_64.out >> ./logs/ree.log 2>&1 &
-nohup cat /tmp/tee_64.out >> ./logs/tee.log 2>&1 &
+nohup cat $REE_PIPE.out >> ./logs/ree.log 2>&1 &
+nohup cat $TEE_PIPE.out >> ./logs/tee.log 2>&1 &
 
 echo "QEMU LOG:" > ./logs/qemu.log
 
 echo "Mounting directory at $QEMU_MOUNT_DIR"
 QEMU_CMD="./qemu-system-aarch64 \
     -nographic \
-    -serial pipe:/tmp/ree_64 -serial pipe:/tmp/tee_64 \
+    -serial pipe:$REE_PIPE -serial pipe:$TEE_PIPE \
     -smp 1 \
     -machine virt,secure=on -cpu cortex-a57 \
     -d unimp -semihosting-config enable,target=native \
@@ -35,22 +40,26 @@ while ! grep "buildroot login:" ./logs/ree.log > /dev/null; do
 done
 
 # Log into root account
-echo Attempting to connect to QEMU at /tmp/ree_64.in
-echo "root" > /tmp/ree_64.in
+echo Attempting to connect to QEMU at $REE_PIPE.in
+echo "root" > $REE_PIPE.in
 sleep 5
 
-QEMU_TEST_FLAG="QEMU TEST COMPLETE"
-QEMU_CMD=" sleep 5 && \
-    mkdir /mnt/ci && \
-    mount -t 9p -o trans=virtio host /mnt/ci && \
-    cp /mnt/ci/*.ta /lib/optee_armtz && \
-    /mnt/ci/ftpm_test; echo $QEMU_TEST_FLAG"
+QEMU_MOUNT_CMD="mkdir /mnt/ci && \
+    mount -t 9p -o trans=virtio host /mnt/ci"
 
-echo "Running command:"
+echo "Mounting host files"
+echo "$QEMU_MOUNT_CMD" > $REE_PIPE.in
+
+QEMU_TEST_FLAG="QEMU TEST COMPLETE"
+QEMU_TEST_CMD=" sleep 5 && \
+    $TEST_COMMAND; \
+    echo $QEMU_TEST_FLAG"
+
+echo "Running test command:"
 echo ""
-echo $QEMU_CMD
+echo $QEMU_TEST_CMD
 echo ""
-echo "$QEMU_CMD" > /tmp/ree_64.in
+echo "$QEMU_TEST_CMD" > $REE_PIPE.in
 echo "Command sent"
 #Seperate the results from the login and command logs
 sleep 1
@@ -63,7 +72,7 @@ while ! grep "$QEMU_TEST_FLAG" ./logs/results.log > /dev/null; do
     sleep 1
 done
 
-if ! grep "fTPM TA selftest returned 0" ./logs/results.log > /dev/null; then
+if ! grep $GOOD_RESULT ./logs/results.log > /dev/null; then
     echo "Test failed"
     echo ""
     echo "REE:"
@@ -78,10 +87,10 @@ if ! grep "fTPM TA selftest returned 0" ./logs/results.log > /dev/null; then
     echo ""
     cat ./logs/results.log
     
-    rm -f /tmp/ree_64.in /tmp/ree_64.out /tmp/tee_64.in /tmp/tee_64.out
+    rm -f $REE_PIPE.in $REE_PIPE.out $TEE_PIPE.in $TEE_PIPE.out
     exit 1
 fi
 
-rm -f /tmp/ree_64.in /tmp/ree_64.out /tmp/tee_64.in /tmp/tee_64.out
+rm -f $REE_PIPE.in $REE_PIPE.out $TEE_PIPE.in $TEE_PIPE.out
 echo "Done!"
 cat ./logs/results.log
