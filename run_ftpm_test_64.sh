@@ -72,7 +72,7 @@ while ! grep "$QEMU_TEST_FLAG" ./logs/results.log > /dev/null; do
     sleep 1
 done
 
-if ! grep $GOOD_RESULT ./logs/results.log > /dev/null; then
+if ! grep "$GOOD_RESULT" ./logs/results.log > /dev/null; then
     echo "Test failed"
     echo ""
     echo "REE:"
