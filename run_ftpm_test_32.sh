@@ -2,6 +2,14 @@
 
 set -e
 
+# Make sure to clean up background jobs
+PIDS=""
+function cleanup {
+    echo "Killing pids: $PIDS"
+    kill $PIDS
+}
+trap cleanup EXIT
+
 # Local files are available in /mnt/ci/
 TEST_COMMAND="cp /mnt/ci/*.ta /lib/optee_armtz && /mnt/ci/ftpm_test"
 GOOD_RESULT="fTPM TA selftest returned 0"
@@ -10,12 +18,14 @@ REE_PIPE=/tmp/ree_32
 TEE_PIP=/tmp/tee_32
 rm -f $REE_PIPE.in $REE_PIPE.out $TEE_PIPE.in $TEE_PIPE.out
 mkfifo $REE_PIPE.in $REE_PIPE.out $TEE_PIPE.in $TEE_PIPE.out
-PIDS=""
+
 mkdir -p logs
 echo "REE LOG:" > ./logs/ree.log
 echo "TEE LOG:" > ./logs/tee.log
-cat $REE_PIPE.out >> ./logs/ree.log 2>&1 &; PIDS="${PIDS} $!"
-cat $TEE_PIPE.out >> ./logs/tee.log 2>&1 &; PIDS="${PIDS} $!"
+cat $REE_PIPE.out >> ./logs/ree.log 2>&1 &
+PIDS="${PIDS} $!"
+cat $TEE_PIPE.out >> ./logs/tee.log 2>&1 &
+PIDS="${PIDS} $!"
 
 echo "QEMU LOG:" > ./logs/qemu.log
 
@@ -30,7 +40,8 @@ QEMU_CMD="./qemu-system-arm \
     -bios bl1.bin \
     -fsdev local,id=fsdev0,path=$QEMU_MOUNT_DIR,security_model=none -device virtio-9p-device,fsdev=fsdev0,mount_tag=host"
 echo "Command:  $QEMU_CMD" >> ./logs/qemu.log
-$QEMU_CMD >> ./logs/qemu.log 2>&1 &; PIDS="${PIDS} $!"
+$QEMU_CMD >> ./logs/qemu.log 2>&1 &
+PIDS="${PIDS} $!"
 
 # Wait for QEMU to boot
 echo QEMU started
@@ -64,7 +75,8 @@ echo "Command sent"
 sleep 1
 
 echo "RESULTS LOG:" > ./logs/results.log
-tail -f -n 0 ./logs/ree.log >> ./logs/results.log &; PIDS="${PIDS} $!"
+tail -f -n 0 ./logs/ree.log >> ./logs/results.log &
+PIDS="${PIDS} $!"
 
 echo "Waiting for tests to finish"
 while ! grep "$QEMU_TEST_FLAG" ./logs/results.log > /dev/null; do
@@ -87,13 +99,9 @@ if ! grep "$GOOD_RESULT" ./logs/results.log > /dev/null; then
     cat ./logs/results.log
     
     rm -f $REE_PIPE.in $REE_PIPE.out $TEE_PIPE.in $TEE_PIPE.out
-    echo "PIDS: $PIDS"
-    kill -2 $PIDS
     exit 1
 fi
 
 rm -f $REE_PIPE.in $REE_PIPE.out $TEE_PIPE.in $TEE_PIPE.out
 echo "Done!"
 cat ./logs/results.log
-echo "PIDS: $PIDS"
-kill -2 $PIDS
