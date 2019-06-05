@@ -9,3 +9,7 @@ qemu_build/qemu_32_tar/
 qemu_build/qemu_64_tar/
 qemu_64.tar.gz
 qemu_32.tar.gz
+authvars_test/host/authvars_test
+authvars_test/host/edk2_driver/uefi_c.o
+authvars_test/host/edk2_driver/AuthVarsDxe.o
+authvars_test/host/main.o
