@@ -81,6 +81,8 @@ PIDS="${PIDS} $!"
 echo "Waiting for tests to finish"
 while ! grep "$QEMU_TEST_FLAG" ./logs/results.log > /dev/null; do
     sleep 1
+    # tail won't update sometimes, force the file to update?
+    cat ./logs/ree.log > /dev/null
 done
 
 if ! grep "$GOOD_RESULT" ./logs/results.log > /dev/null; then

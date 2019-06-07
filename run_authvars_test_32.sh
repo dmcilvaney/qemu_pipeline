@@ -12,7 +12,7 @@ trap cleanup EXIT
 
 # Local files are available in /mnt/ci/
 TEST_COMMAND="cp /mnt/ci/*.ta /lib/optee_armtz && /mnt/ci/authvars_test"
-GOOD_RESULT="fTPM TA selftest returned 0"
+GOOD_RESULT="Summary: Total = 7, Passed = 6, Failed = 1, Skipped = 0"
 
 REE_PIPE=/tmp/ree_32
 TEE_PIPE=/tmp/tee_32
@@ -82,6 +82,8 @@ PIDS="${PIDS} $!"
 echo "Waiting for tests to finish"
 while ! grep "$QEMU_TEST_FLAG" ./logs/results.log > /dev/null; do
     sleep 1
+    # tail won't update sometimes, force the file to update?
+    cat ./logs/ree.log > /dev/null
 done
 
 if ! grep "$GOOD_RESULT" ./logs/results.log > /dev/null; then
@@ -98,7 +100,7 @@ if ! grep "$GOOD_RESULT" ./logs/results.log > /dev/null; then
     echo "Results:"
     echo ""
     cat ./logs/results.log
-    
+
     rm -f $REE_PIPE.in $REE_PIPE.out $TEE_PIPE.in $TEE_PIPE.out
     exit 1
 fi

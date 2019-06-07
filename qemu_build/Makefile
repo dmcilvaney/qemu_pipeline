@@ -52,7 +52,7 @@ test_32: $(TAR_32_RULE)
 	chmod a+x ../../run_ftpm_test_32.sh
 	export QEMU_MOUNT_DIR=$(QEMU_MOUNT_DIR)
 	../../run_ftpm_test_32.sh
-#../../run_authvars_test_32.sh
+	../../run_authvars_test_32.sh
 
 run_64: $(TAR_64_RULE) instructions
 	mkdir -p ./qemu_64_run
