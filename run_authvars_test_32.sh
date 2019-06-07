@@ -11,11 +11,12 @@ function cleanup {
 trap cleanup EXIT
 
 # Local files are available in /mnt/ci/
-TEST_COMMAND="cp /mnt/ci/*.ta /lib/optee_armtz && /mnt/ci/ftpm_test"
+TEST_COMMAND="cp /mnt/ci/*.ta /lib/optee_armtz && /mnt/ci/authvars_test"
 GOOD_RESULT="fTPM TA selftest returned 0"
 
 REE_PIPE=/tmp/ree_32
 TEE_PIPE=/tmp/tee_32
+echo Pipes: $REE_PIPE, $TEE_PIPE
 rm -f $REE_PIPE.in $REE_PIPE.out $TEE_PIPE.in $TEE_PIPE.out
 mkfifo $REE_PIPE.in $REE_PIPE.out $TEE_PIPE.in $TEE_PIPE.out
 

@@ -1,7 +1,7 @@
 .ONESHELL:
 SHELL = bash
 
-QEMU_MOUNT_DIR?=$(realpath ~/qemu_mnt)
+QEMU_MOUNT_DIR ?= $(abspath $(shell realpath ~/qemu_mnt))
 
 .PHONY: all test update run_32 run_64
 all: update
@@ -13,8 +13,25 @@ TAR_64_NAME=../qemu_64.tar.gz
 TAR_32_RULE=$(if $(wildcard $(TAR_32_NAME)),,$(TAR_32_NAME))
 TAR_64_RULE=$(if $(wildcard $(TAR_64_NAME)),,$(TAR_64_NAME))
 
-.PHONY: run_32 run_64 test_32 test_64
-run_32: $(TAR_32_RULE)
+.PHONY: run_32 run_64 test_32 test_64 instructions
+instructions:
+	@echo ''
+	@echo ==============
+	@echo ''
+	@echo 'To access the VM run'
+	@echo '      sudo screen /dev/pts/<1st#> for normal world'
+	@echo '      sudo screen /dev/pts/<2nd#> for secure world'
+	@echo 'Login using:'
+	@echo '      root'
+	@echo 'To mount files at $(QEMU_MNT_DIR) run:'
+	@echo '      mkdir -p /mnt/ci && mount -t 9p -o trans=virtio host /mnt/ci'
+	@echo 'To copy TAs:'
+	@echo '      cp /mnt/ci/*.ta /lib/optee_armtz'
+	@echo ''
+	@echo ==============
+	@echo ''
+
+run_32: $(TAR_32_RULE) instructions
 	mkdir -p ./qemu_32_run
 	tar xf $(TAR_32_NAME) -C ./qemu_32_run --strip-components=1
 	cd qemu_32_run
@@ -26,7 +43,7 @@ run_32: $(TAR_32_RULE)
 	-d unimp -semihosting-config enable,target=native \
 	-m 1057 \
 	-bios bl1.bin \
-	-virtfs local,id=sh0,path=/home/,security_model=passthrough,readonly,mount_tag=sh0
+	-fsdev local,id=fsdev0,path=$(QEMU_MOUNT_DIR),security_model=none -device virtio-9p-device,fsdev=fsdev0,mount_tag=host
 
 test_32: $(TAR_32_RULE)
 	mkdir -p ./qemu_32_run
@@ -35,8 +52,9 @@ test_32: $(TAR_32_RULE)
 	chmod a+x ../../run_ftpm_test_32.sh
 	export QEMU_MOUNT_DIR=$(QEMU_MOUNT_DIR)
 	../../run_ftpm_test_32.sh
+#../../run_authvars_test_32.sh
 
-run_64: $(TAR_64_RULE)
+run_64: $(TAR_64_RULE) instructions
 	mkdir -p ./qemu_64_run
 	tar xf $(TAR_64_NAME) -C ./qemu_64_run --strip-components=1
 	cd qemu_64_run
@@ -51,7 +69,7 @@ run_64: $(TAR_64_RULE)
 	-initrd rootfs.cpio.gz \
 	-kernel Image -no-acpi \
 	-append 'console=ttyAMA0,38400 keep_bootcon root=/dev/vda2' \
-	-virtfs local,id=sh0,path=/home/,security_model=passthrough,readonly,mount_tag=sh0
+	-virtfs local,id=sh0,path=$(QEMU_MOUNT_DIR),security_model=passthrough,readonly,mount_tag=sh0
 
 test_64: $(TAR_64_RULE)
 	mkdir -p ./qemu_64_run
