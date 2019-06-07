@@ -1,6 +1,4 @@
 .vscode
-ftpm_test/host/ftpm_test
-ftpm_test/host/main.o
 qemu_build/qemu_32/
 qemu_build/qemu_64/
 qemu_build/qemu_32_run/
@@ -10,6 +8,7 @@ qemu_build/qemu_64_tar/
 qemu_64.tar.gz
 qemu_32.tar.gz
 authvars_test/host/authvars_test
-authvars_test/host/edk2_driver/uefi_c.o
-authvars_test/host/edk2_driver/AuthVarsDxe.o
-authvars_test/host/main.o
+/authvars_test/host/**/*.o
+/authvars_test/host/**/*.blob
+ftpm_test/host/ftpm_test
+/ftpm_test/host/**/*.o
