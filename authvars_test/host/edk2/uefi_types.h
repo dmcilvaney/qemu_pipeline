@@ -54,6 +54,8 @@ CompareGuid (
   );
 
 typedef VOID *EFI_EVENT;
+typedef VOID *EFI_HANDLE;
+typedef VOID *EFI_SYSTEM_TABLE;
 
 /*
 Adjustments for the inclusion of  UEFIVarServices.h as is.

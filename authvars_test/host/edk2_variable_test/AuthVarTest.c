@@ -12,6 +12,24 @@
 *
 **/
 
+/*
+#include <PiDxe.h>
+#include <Guid/AuthenticatedVariableFormat.h>
+#include <Guid/AuthVarTestFfs.h>
+#include <Guid/GlobalVariable.h>
+#include <Guid/ImageAuthentication.h>
+#include <Library/BaseMemoryLib.h>
+#include <Library/DxeServicesLib.h>
+#include <Library/MemoryAllocationLib.h>
+#include <Library/PrintLib.h>
+#include <Library/UefiBootServicesTableLib.h>
+#include <Library/UefiLib.h>
+#include <Library/UefiRuntimeServicesTableLib.h>
+#include <Protocol/ShellParameters.h>
+
+#include "EdkTest.h"
+*/
+
 #include "edk2_test_harness/EdkTest.h"
 #include "edk2/uefi.h"
 #include "edk2_driver/UEFIVarServices.h"
@@ -19,7 +37,7 @@
 
 MODULE ("UEFI authenticated variables functional tests");
 
-//EFI_HANDLE mImageHandle;
+EFI_HANDLE mImageHandle;
 VOID *mImageData = NULL;
 VOID *mActualImageData = NULL;
 CHAR16 *mEnumVariableName = NULL;
@@ -36,7 +54,6 @@ typedef struct {
   CHAR16 *VariableName;
 } AuthVarInfo;
 
-//extern char _binary_file_Test_DB_start
 // Well-known authenticated variables with valid
 // data binary blobs baked into the FV.
 AuthVarInfo mSecureBootVariables[] = {
@@ -63,8 +80,6 @@ RandomBytes (
   )
 {
   UINTN Index;
-
-  wprintf(L"%s", Test_db);
 
   ASSERT (Buffer != NULL);
 
@@ -188,7 +203,6 @@ VerifyValidVarWriteReadEnumDel (
   // - Verify it is not present and not enumerable anymore.
 
   ActualDataSize = 0;
-  LOG_COMMENT("Name:%S\n",VariableName);
   VERIFY_ARE_EQUAL (EFI_STATUS,
                     EFI_NOT_FOUND,
                     gRT->GetVariable (
@@ -280,7 +294,6 @@ VerifyValidVarWriteReadEnumDel (
                           NULL),
                     "Verify variable doesn't exist anymore"
                     );
-  LOG_COMMENT("Done with :%S\n",VariableName);
 }
 
 /**
@@ -774,7 +787,7 @@ VerifyNameHandling (
     // Build a long name of the form "abc...xyzabc..."
     LongString[i] = ('a' + (i % 26));
   }
-  LongString[i] = (CHAR16)('\0');
+  LongString[i] = '\0';
   SetAndCheckVariable(
     LongString,
     &TestVendorGuid,
@@ -1079,24 +1092,23 @@ TestValidAuthVars (
   ImageSize = 0;
   VariableCount = ARRAY_SIZE (mSecureBootVariables);
 
-
-
   for (Idx = 0; Idx < VariableCount; ++Idx) {
     VERIFY_IS_NULL (mImageData);
-    // VERIFY_SUCCEEDED (GetSectionFromAnyFv (
-    //                     mSecureBootVariables[Idx].BinaryBlobFvFfsNameGuid,
-    //                     EFI_SECTION_RAW,
-    //                     0,
-    //                     &mImageData,
-    //                     &ImageSize
-    //                     ),
-    //                   "Getting variable binary blob from FV"
-    //                   );
+    /*
+    VERIFY_SUCCEEDED (GetSectionFromAnyFv (
+                        mSecureBootVariables[Idx].BinaryBlobFvFfsNameGuid,
+                        EFI_SECTION_RAW,
+                        0,
+                        &mImageData,
+                        &ImageSize
+                        ),
+                      "Getting variable binary blob from FV"
+                      );
+      */
     ImageSize = *mSecureBootVariables[Idx].BinarySize;
     mImageData = AllocateZeroPool (ImageSize);
     VERIFY_IS_NOT_NULL (mImageData);
     CopyMem(mImageData, *mSecureBootVariables[Idx].Binary, ImageSize);
-    
 
     LOG_COMMENT ("Verifying well-known auth variable %s\n",\
                  mSecureBootVariables[Idx].VariableName
@@ -1129,13 +1141,12 @@ TestInvalidAuthVars (
                                                EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS);
 
   // The test attempts two write a badly formed authenticated variable.
-  ImageSize = *mSecureBootVariables[0].BinarySize;
+
+  ImageSize = 1000;
   mImageData = AllocateZeroPool (ImageSize);
   VERIFY_IS_NOT_NULL (mImageData);
-  CopyMem(mImageData, *mSecureBootVariables[0].Binary, ImageSize);
 
-  // drop some random bytes in the middle
-  RandomBytes (10, &((BYTE*)mImageData)[ImageSize/2]);
+  RandomBytes (ImageSize, mImageData);
 
   LOG_COMMENT ("Verifying garbage authenticated variable %s\n",\
                 mSecureBootVariables[0].VariableName
@@ -1179,7 +1190,6 @@ TestValidNonVolatileVars (
 
   VariableCount = ARRAY_SIZE (BufferSizes);
   for (Idx = 0; Idx < VariableCount; ++Idx) {
-    LOG_COMMENT("Running index %d out of %d\n", Idx, ARRAY_SIZE (BufferSizes));
     ImageSize = BufferSizes[Idx];
     mImageData = AllocateZeroPool (ImageSize);
     VERIFY_IS_NOT_NULL (mImageData);
@@ -1280,11 +1290,12 @@ TestCleanup (
 EFI_STATUS
 EFIAPI
 UefiMain (
-  //IN EFI_HANDLE        ImageHandle,
-  //IN EFI_SYSTEM_TABLE  *SystemTable
+  IN EFI_HANDLE        ImageHandle,
+  IN EFI_SYSTEM_TABLE  *SystemTable
   )
 {
-  //mImageHandle = ImageHandle;
+  mImageHandle = 0;
+  (void) SystemTable;
 
   MODULE_SETUP (ModuleSetup);
   TEST_SETUP (TestSetup);
@@ -1297,7 +1308,7 @@ UefiMain (
   TEST_FUNC (TestValidAuthVars);
   TEST_FUNC (TestInvalidAuthVars);
 
-  //Run this last
+  // Run this last
   TEST_FUNC (VerifyOverflow);
 
   if (!RUN_MODULE(0, NULL)) {
