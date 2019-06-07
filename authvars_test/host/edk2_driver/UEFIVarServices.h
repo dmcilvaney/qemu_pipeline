@@ -9,7 +9,7 @@ Arnold Pereira(Arnoldp) Apr-09-2013
 --*/
 #pragma once
 
-#include "uefi_types.h"
+#include "edk2/uefi.h"
 
 //
 // Function codes for calling UEFI Variable service

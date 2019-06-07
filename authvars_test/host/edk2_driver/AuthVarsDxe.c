@@ -20,15 +20,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 */
 
 #include "UEFIVarServices.h"
+#include "edk2/uefi.h"
 #include "uefi_driver.h"
-#include "uefi_types.h"
-
-GUID gOpteeAuthVarTaGuid = { 0x2d57c0f7, 0xbddf, 0x48ea, { 0x83, 0x2f, 0xd8, 0x4a, 0x1a, 0x21, 0x93, 0x01 }};
-GUID gEfiGlobalVariableGuid = { 0x8BE4DF61, 0x93CA, 0x11D2, { 0xAA, 0x0D, 0x00, 0xE0, 0x98, 0x03, 0x2B, 0x8C }};
-GUID gEfiSecureBootEnableDisableGuid    = { 0xf0a30bc7, 0xaf08, 0x4556, { 0x99, 0xc4, 0x0, 0x10, 0x9, 0xc9, 0x3a, 0x44 }};
-GUID gEfiCustomModeEnableGuid           = { 0xc076ec0c, 0x7028, 0x4399, { 0xa0, 0x72, 0x71, 0xee, 0x5c, 0x44, 0x8b, 0x9f } };
-EFI_RUNTIME_SERVICES  Services = {};
-EFI_RUNTIME_SERVICES  *gRT = &Services;
 
 /*
 Macro to turn on memory leak check on exit boot services.
@@ -263,11 +256,10 @@ OpteeRuntimeGetVariable(
     goto Exit;
   }
 
-  // LOG_TRACE(
-  //   "%g\\%s (DataSize=0x%p)",
-  //   VendorGuid,
-  //   VariableName,
-  //   (DataSize != NULL ? *DataSize : 0));
+  LOG_TRACE(
+     "\\%S (DataSize=0x%p)",
+     VariableName,
+     (DataSize != NULL ? *DataSize : 0));
 
   //
   // Test hook to allow the test to acquire the session ID used with the TA.
@@ -299,7 +291,7 @@ OpteeRuntimeGetVariable(
   // Security: make sure external pointer values are copied locally to prevent
   // concurrent modification after validation.
   //
-  LocalVariableNameSize = StrSize(VariableName);
+  LocalVariableNameSize = StrSize(VariableName) / 2;
   LocalDataSize = *DataSize;
 
   LOG_TRACE("LocalDataSize is 0x%x", LocalDataSize);
@@ -363,8 +355,10 @@ OpteeRuntimeGetVariable(
     VariableParam->GetParam.VariableNameSize = LocalVariableNameSize;
 
     CopyMem(&VariableParam->GetParam.VendorGuid, VendorGuid, sizeof(VariableParam->GetParam.VendorGuid));
-    CopyMem(&VariableParam->GetParam.VariableName, VariableName, LocalVariableNameSize);
-    LOG_TRACE("Get Variable: '%S'", VariableName);
+    //CopyMem(&VariableParam->GetParam.VariableName, VariableName, LocalVariableNameSize);
+    FixWideString(VariableName,(INT16*)&VariableParam->GetParam.VariableName);
+
+    LOG_TRACE("Get Variable: '%S'",VariableName);
     Status = OpteeRuntimeVariableInvokeCommand(
       VSGetOp,
       VariableParamSize,
@@ -403,6 +397,8 @@ OpteeRuntimeGetVariable(
     if (Attributes != NULL) {
       *Attributes = VariableResult->GetResult.Attributes;
     }
+
+    wprintf(L"0x%x\n", Status);
 
     if (EFI_ERROR(Status)) {
       goto Exit;
@@ -553,7 +549,9 @@ OpteeRuntimeGetNextVariableName(
     VariableParam->GetNextParam.VariableNameSize = LocalInVariableNameSize;
 
     CopyMem(&VariableParam->GetNextParam.VendorGuid, VendorGuid, sizeof(VariableParam->GetNextParam.VendorGuid));
-    CopyMem(&VariableParam->GetNextParam.VariableName, VariableName, LocalInVariableNameSize);
+    //CopyMem(&VariableParam->GetNextParam.VariableName, VariableName, LocalInVariableNameSize);
+    FixWideString(VariableName,(INT16*)&VariableParam->GetParam.VariableName);
+
     LOG_TRACE("Get Next Variable: '%S'", VariableName);
     Status = OpteeRuntimeVariableInvokeCommand(VSGetNextVarOp,
       VariableParamSize,
@@ -572,11 +570,11 @@ OpteeRuntimeGetNextVariableName(
       // to subtract header.
       //
       ASSERT(ResultSize >= sizeof(VARIABLE_GET_RESULT));
-      *VariableNameSize = ResultSize - sizeof(VARIABLE_GET_RESULT);
+      *VariableNameSize = (ResultSize - sizeof(VARIABLE_GET_RESULT)) * 2;
 
     } else if (Status == EFI_SUCCESS) {
       LOG_TRACE("Get Next Variable Success");
-      *VariableNameSize = VariableResult->GetNextResult.VariableNameSize;
+      *VariableNameSize = VariableResult->GetNextResult.VariableNameSize * 2;
     } else {
       if (Status == EFI_NOT_FOUND) {
         LOG_TRACE("Get next: Not found");
@@ -601,7 +599,8 @@ OpteeRuntimeGetNextVariableName(
     }
 
     CopyMem(VendorGuid, &VariableResult->GetNextResult.VendorGuid, sizeof(VariableResult->GetNextResult.VendorGuid));
-    CopyMem(VariableName, &VariableResult->GetNextResult.VariableName, VariableResult->GetNextResult.VariableNameSize);
+    //CopyMem(VariableName, &VariableResult->GetNextResult.VariableName, VariableResult->GetNextResult.VariableNameSize);
+    RestoreWideString((INT16 *)&VariableResult->GetNextResult.VariableName, VariableName);
   }
 
 Exit:
@@ -666,7 +665,7 @@ OpteeRuntimeSetVariable(
     goto Exit;
   }
 
-  //LOG_TRACE("%g\\%s (DataSize=0x%p)", VendorGuid, VariableName, DataSize);
+  LOG_TRACE("\\%S (DataSize=0x%x)", VariableName, DataSize);
 
   //
   // Test hook to allow the test to set the session ID used with the TA.
@@ -687,6 +686,7 @@ OpteeRuntimeSetVariable(
   // concurrent modification after validation.
   //
   VariableNameSize = StrSize(VariableName);
+  wprintf(L"Strsize: 0x%x\n",VariableNameSize);
 
   {
     PVARIABLE_PARAM  VariableParam = (PVARIABLE_PARAM)mVariableParamMem.buffer;
@@ -735,7 +735,8 @@ OpteeRuntimeSetVariable(
     VariableParam->SetParam.OffsetData = VariableNameSize;
 
     CopyMem(&VariableParam->SetParam.VendorGuid, VendorGuid, sizeof(VariableParam->SetParam.VendorGuid));
-    CopyMem(&VariableParam->SetParam.Payload[0], VariableName, VariableNameSize);
+    //CopyMem(&VariableParam->SetParam.Payload[0], VariableName, VariableNameSize);
+    FixWideString(VariableName,(INT16*)&VariableParam->SetParam.Payload[0]);
     CopyMem(&VariableParam->SetParam.Payload[VariableNameSize], Data, DataSize);
     LOG_TRACE("Set Variable: '%S', Attribs 0x%x", VariableName, Attributes);
     Status = OpteeRuntimeVariableInvokeCommand(
@@ -881,6 +882,7 @@ Exit:
   return Status;
 }
 
+#define TA_AUTHVARS_UUID { 0x2d57c0f7, 0xbddf, 0x48ea, {0x83, 0x2f, 0xd8, 0x4a, 0x1a, 0x21, 0x93, 0x01}}
 
 /**
 Opens a session to the AuthVar TA that will be closed on exit boot services.
@@ -895,15 +897,14 @@ TaOpenSession(
 {
   TEEC_Result  TeecResult;
   uint32_t     ErrorOrigin;
-  TEEC_UUID    TeecUuid;
+  TEEC_UUID    TeecUuid = TA_AUTHVARS_UUID;
   EFI_STATUS   Status = EFI_SUCCESS;
 
-  CopyMem(&TeecUuid, &gOpteeAuthVarTaGuid, sizeof(TeecUuid));
+  // CopyMem(&TeecUuid, &gOpteeAuthVarTaGuid, sizeof(TeecUuid));
 
-  TeecUuid.timeLow = SwapBytes32(TeecUuid.timeLow);
-  TeecUuid.timeMid = SwapBytes16(TeecUuid.timeMid);
-  TeecUuid.timeHiAndVersion = SwapBytes16(TeecUuid.timeHiAndVersion);
-
+  // TeecUuid.timeLow = SwapBytes32(TeecUuid.timeLow);
+  // TeecUuid.timeMid = SwapBytes16(TeecUuid.timeMid);
+  // TeecUuid.timeHiAndVersion = SwapBytes16(TeecUuid.timeHiAndVersion);
   //
   // Open a session to the Auth Var TA
   //
@@ -932,6 +933,7 @@ TaOpenSession(
     (0x2000),
     (0x8000)) +
     sizeof(VARIABLE_PARAM);
+  mVariableParamMem.flags = (TEEC_MEM_INPUT);
 
   TeecResult = TEEC_AllocateSharedMemory(&mTeecContext, &mVariableParamMem);
   if (TeecResult != TEEC_SUCCESS) {
@@ -941,6 +943,7 @@ TaOpenSession(
   }
 
   mVariableResultMem.size = mVariableParamMem.size;
+  mVariableResultMem.flags = (TEEC_MEM_OUTPUT);
 
   TeecResult = TEEC_AllocateSharedMemory(&mTeecContext, &mVariableResultMem);
   if (TeecResult != TEEC_SUCCESS) {
@@ -1318,8 +1321,8 @@ VOID AuthVarHexDump(UINT8 *buffer, UINT32 size) {
     *(ptr++) = BitsToChar(byteL);
   }
   *ptr = '\0';
-  DEBUG((DEBUG_ERROR, "0x%x:", (UINT32)buffer));
-  DEBUG((DEBUG_ERROR, string));
+  wprintf(L"0x%x:", (UINT32)buffer);
+  wprintf(L"%s", string);
 }
 
 VOID AuthVarFixBuffer(void *buf, UINT32 size) {
@@ -1347,22 +1350,22 @@ OpteeRuntimeOnExitBootServices(
 )
 {
   EFI_STATUS Status = EFI_SUCCESS;
-  UINT32 ResultSize = 0;
-  UINT32 AuthvarStatus = 0;
+  //UINT32 ResultSize = 0;
+  //UINT32 AuthvarStatus = 0;
 
   LOG_INFO("Notifying auth_var TA for ExitBootServices event");
 
   //
   // Plain signal with no parameters or results.
   //
-  Status = OpteeRuntimeVariableInvokeCommand(
-    VSSignalExitBootServicesOp,
-    0,
-    NULL,
-    0,
-    NULL,
-    &ResultSize,
-    &AuthvarStatus);
+  // Status = OpteeRuntimeVariableInvokeCommand(
+  //   VSSignalExitBootServicesOp,
+  //   0,
+  //   NULL,
+  //   0,
+  //   NULL,
+  //   &ResultSize,
+  //   &AuthvarStatus);
 
   if (Status != EFI_SUCCESS) {
     //

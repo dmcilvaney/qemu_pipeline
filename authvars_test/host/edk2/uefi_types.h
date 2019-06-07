@@ -5,6 +5,12 @@
 #include <wchar.h>
 #include <err.h>
 
+#define IN
+#define OUT
+#define EFIAPI
+#define OPTIONAL
+#define GLOBAL_REMOVE_IF_UNREFERENCED
+
 typedef uint8_t UINT8;
 typedef uint16_t UINT16;
 typedef uint32_t UINT32;
@@ -20,8 +26,6 @@ typedef unsigned int UINTN;
 typedef int INTN;
 typedef UINTN EFI_STATUS;
 
-
-#define WCHAR_SIZE_CHECK (void)sizeof(uint8_t[(int32_t)(sizeof(uint16_t) - sizeof(wchar_t))])
 typedef wchar_t CHAR16;
 typedef CHAR16 WCHAR;
 typedef char CHAR8;
@@ -32,6 +36,7 @@ typedef UINT8 BOOLEAN;
 
 #define CONST const
 #define NULL ((void *)0)
+#define STATIC static
 
 typedef struct {
   UINT32  Data1;
@@ -42,6 +47,12 @@ typedef struct {
 
 typedef GUID EFI_GUID;
 
+BOOLEAN
+CompareGuid (
+  IN CONST GUID  *Guid1,
+  IN CONST GUID  *Guid2
+  );
+
 typedef VOID *EFI_EVENT;
 
 /*
@@ -51,104 +62,13 @@ Adjustments for the inclusion of  UEFIVarServices.h as is.
 # define _Field_size_bytes_(count)
 #endif
 
-#define IN
-#define OUT
-#define EFIAPI
-#define OPTIONAL
-#define GLOBAL_REMOVE_IF_UNREFERENCED
-
 #define ASSERT(a) {if(!(a)){errx(1,#a);}};
-
-typedef
-EFI_STATUS
-(EFIAPI *EFI_GET_VARIABLE)(
-  IN     CHAR16                      *VariableName,
-  IN     EFI_GUID                    *VendorGuid,
-  OUT    UINT32                      *Attributes,    OPTIONAL
-  IN OUT UINTN                       *DataSize,
-  OUT    VOID                        *Data           OPTIONAL
-  );
-
-typedef
-EFI_STATUS
-(EFIAPI *EFI_GET_NEXT_VARIABLE_NAME)(
-  IN OUT UINTN                    *VariableNameSize,
-  IN OUT CHAR16                   *VariableName,
-  IN OUT EFI_GUID                 *VendorGuid
-  );
-
-typedef
-EFI_STATUS
-(EFIAPI *EFI_SET_VARIABLE)(
-  IN  CHAR16                       *VariableName,
-  IN  EFI_GUID                     *VendorGuid,
-  IN  UINT32                       Attributes,
-  IN  UINTN                        DataSize,
-  IN  VOID                         *Data
-  );
-
-typedef
-EFI_STATUS
-(EFIAPI *EFI_QUERY_VARIABLE_INFO)(
-  IN  UINT32            Attributes,
-  OUT UINT64            *MaximumVariableStorageSize,
-  OUT UINT64            *RemainingVariableStorageSize,
-  OUT UINT64            *MaximumVariableSize
-  );
-
-typedef struct {
-  //
-  // Variable Services
-  //
-  EFI_GET_VARIABLE                GetVariable;
-  EFI_GET_NEXT_VARIABLE_NAME      GetNextVariableName;
-  EFI_SET_VARIABLE                SetVariable;
-  //
-  // Miscellaneous UEFI 2.0 Service
-  //
-  EFI_QUERY_VARIABLE_INFO         QueryVariableInfo;
-} EFI_RUNTIME_SERVICES;
-
-UINTN
-StrSize (
-  CONST CHAR16              *String
-  );
-
-VOID
-ZeroMem (
-    IN VOID   *Buffer,
-    IN UINTN  Size
-    );
-
-VOID
-CopyMem (
-  IN VOID   *Destination,
-  IN VOID   *Source,
-  IN UINTN  Length
-  );
-
-#define MAX_ADDRESS   ((UINTN)(~0ULL >> (64 - sizeof (INTN) * 8)))
-VOID *
-SetMem (
-  OUT VOID  *Buffer,
-  IN UINTN  Length,
-  IN UINT8  Value
-  );
-
-UINT16
-SwapBytes16 (
-    UINT16                    Value
-    );
-
-UINT32
-SwapBytes32 (
-    UINT32                    Value
-    );
 
 #define MAX(a,b) (((a) > (b)) ? (a) : (b))
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof(*a))
 
-#define RETURN_ERROR(StatusCode)     (((INTN)(RETURN_STATUS)(StatusCode)) < 0)
+#define RETURN_ERROR(StatusCode)     (((INTN)(RETURN_STATUS)(StatusCode)) != 0)
 #define EFI_ERROR(A)              RETURN_ERROR(A)
 
 #define EFI_SUCCESS               RETURN_SUCCESS

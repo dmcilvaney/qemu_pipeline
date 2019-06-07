@@ -1,59 +1,19 @@
 #ifndef UEFI_DRIVER_H
 #define UEFI_DRIVER_H
 #pragma once
-#pragma message "HELLO!"
 
-#include "uefi_types.h"
+#include "edk2/uefi.h"
 #include <tee_client_api.h>
-
-extern EFI_RUNTIME_SERVICES  *gRT;
 
 #include <stdio.h>
 #include <string.h>
-#define LOG_INFO(...) {printf("INFO:"); printf(__VA_ARGS__);}
-#define LOG_VANILLA_TRACE(...) {printf("VANILLA_TRACE:"); printf(__VA_ARGS__);}
-#define LOG_TRACE(...) {printf("TRACE:"); printf(__VA_ARGS__);}
-#define LOG_ERROR(...) {printf("ERROR:"); printf(__VA_ARGS__);}
-#define DEBUG_STRIP(lvl,...) LOG_ERROR(__VA_ARGS__)
+#define LOG_LEVEL 1
+#define LOG_INFO(...) {if(LOG_LEVEL >= 2){wprintf(L"(%s:%d)INFO:", __FILE__,__LINE__); wprintf(L ## __VA_ARGS__);wprintf(L"\n");}}
+#define LOG_VANILLA_TRACE(...) {if(LOG_LEVEL >= 3){wprintf(L"(%s:%d)VANILLA_TRACE:", __FILE__,__LINE__); wprintf(L ## __VA_ARGS__);wprintf(L"\n");}}
+#define LOG_TRACE(...) {if(LOG_LEVEL >= 4){wprintf(L"(%s:%d)TRACE:", __FILE__,__LINE__); wprintf(L ## __VA_ARGS__);wprintf(L"\n");}}
+#define LOG_ERROR(...) {if(LOG_LEVEL >= 1){wprintf(L"(%s:%d)ERROR:", __FILE__,__LINE__); wprintf(L ## __VA_ARGS__);wprintf(L"\n");}}
+#define DEBUG_STRIP(lvl,...) LOG_INFO(__VA_ARGS__)
 #define DEBUG(expr) DEBUG_STRIP expr
-
-extern GUID gOpteeAuthVarTaGuid;
-extern GUID gEfiGlobalVariableGuid;
-extern GUID gEfiSecureBootEnableDisableGuid;
-extern GUID gEfiCustomModeEnableGuid;
-///
-/// Whether the system is operating in setup mode (1) or not (0).
-/// All other values are reserved. Should be treated as read-only.
-/// Its attribute is BS+RT.
-///
-#define EFI_SETUP_MODE_NAME                         L"SetupMode"
-///
-/// The Key Exchange Key Signature Database.
-/// Its attribute is NV+BS+RT+AT.
-///
-#define EFI_KEY_EXCHANGE_KEY_NAME                   L"KEK"
-///
-/// The public Platform Key.
-/// Its attribute is NV+BS+RT+AT.
-///
-#define EFI_PLATFORM_KEY_NAME                       L"PK"
-///
-/// Whether the platform firmware is operating in Secure boot mode (1) or not (0).
-/// All other values are reserved. Should be treated as read-only.
-/// Its attribute is BS+RT.
-///
-#define EFI_SECURE_BOOT_MODE_NAME                   L"SecureBoot"
-
-#define SETUP_MODE                        1
-#define USER_MODE                         0
-#define SECURE_BOOT_MODE_ENABLE           1
-#define SECURE_BOOT_MODE_DISABLE          0
-#define EFI_SECURE_BOOT_ENABLE_NAME      L"SecureBootEnable"
-#define SECURE_BOOT_ENABLE               1
-#define SECURE_BOOT_DISABLE              0
-#define EFI_CUSTOM_MODE_NAME          L"CustomMode"
-#define CUSTOM_SECURE_BOOT_MODE       1
-#define STANDARD_SECURE_BOOT_MODE     0
 
 EFI_STATUS
 EFIAPI

@@ -1,4 +1,5 @@
-#include "uefi_types.h"
+#include "uefi_c.h"
+#include <stdlib.h>
 
 UINTN
 StrSize (
@@ -6,6 +7,15 @@ StrSize (
   )
 {
   return (wcslen (String) + 1) * sizeof (*String);
+}
+
+INTN
+StrCmp (
+  CONST CHAR16              *FirstString,
+  CONST CHAR16              *SecondString
+  )
+{
+  return wcscmp(FirstString,SecondString);
 }
 
 VOID
@@ -41,6 +51,45 @@ SetMem (
   ASSERT ((Length - 1) <= (MAX_ADDRESS - (UINTN)Buffer));
 
   return memset (Buffer, Length, Value);
+}
+
+VOID *
+AllocatePool (
+  IN UINTN  AllocationSize
+  )
+{
+  return (VOID*) malloc (AllocationSize);
+}
+
+VOID *
+AllocateZeroPool (
+  IN UINTN  AllocationSize
+  )
+{
+  return calloc(AllocationSize, sizeof(BYTE));
+}
+
+VOID *
+EFIAPI
+ReallocatePool (
+  IN UINTN  OldSize,
+  IN UINTN  NewSize,
+  IN VOID   *OldBuffer  OPTIONAL
+  )
+{
+  if(OldBuffer) {
+    return realloc(OldBuffer, NewSize);
+  } else {
+    return AllocateZeroPool(NewSize);
+  }
+}
+
+VOID
+FreePool (
+  IN VOID   *Buffer
+  )
+{
+  free ((void *) Buffer);
 }
 
 UINT16

@@ -6,24 +6,39 @@ OBJCOPY ?= $(CROSS_COMPILE)objcopy
 OBJDUMP ?= $(CROSS_COMPILE)objdump
 READELF ?= $(CROSS_COMPILE)readelf
 
-OBJS = main.o edk2_driver/AuthVarsDxe.o edk2_driver/uefi_c.o
+SUB_DIRS = edk2 edk2_driver edk2_test_harness edk2_variable_test
+C_FILES = $(foreach dir,$(SUB_DIRS),$(wildcard $(dir)/*.c)) $(wildcard *.c)
+OBJS = $(C_FILES:.c=.o)
 
-CPPFLAGS += -fshort-wchar
-CFLAGS += -Wall -I../ta/include -I$(TEEC_EXPORT)/include -I./include -fmax-errors=3 -Werror 
+CFLAGS += -Wall -I../ta/include -I$(TEEC_EXPORT)/include -I./include -I./ -fmax-errors=2 -Werror
 #Add/link other required libraries here
 LDADD += -l:libteec.a -L$(TEEC_EXPORT)/lib
 
 BINARY = authvars_test
 
+DB = edk2_variable_test/Test_db.blob
+KEK = edk2_variable_test/Test_KEK.blob
+BLOBS = $(DB) $(KEK) ./test.blob
+
 .PHONY: all
 all: $(BINARY)
 
-$(BINARY): $(OBJS)
+$(BINARY): $(BLOBS) $(OBJS) 
 	$(CC) -o $@ $^ $(LDADD)
 
 .PHONY: clean
 clean:
-	rm -f $(OBJS) $(BINARY)
+	rm -f $(OBJS) $(BINARY) $(BLOBS)
+
 
 %.o: %.c
+	@echo $$GNUTARGET
 	$(CC) $(CFLAGS) -c $< -o $@
+
+BIN_START=_binary_$(subst /,_,$*)_bin_start
+BIN_SIZE=_binary_$(subst /,_,$*)_bin_size
+SHORT_NAME=_binary_$(*F)_bin
+$(BLOBS): %.blob:%.bin
+	$(LD) -b binary -r $< -o $@.tmp
+	$(OBJCOPY) --redefine-sym $(BIN_START)=$(SHORT_NAME)_start --redefine-sym $(BIN_SIZE)=$(SHORT_NAME)_size $@.tmp $@
+	rm -f $@.tmp
