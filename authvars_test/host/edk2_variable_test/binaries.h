@@ -10,7 +10,6 @@
                                     static const char const * name = (char *)(& _binary_##name##_bin_start); \
                                     static const unsigned int name##_size = (unsigned int)(& _binary_##name##_bin_size);
 
-EXTERNAL_BIN(test);
 EXTERNAL_BIN(Test_db);
 EXTERNAL_BIN(Test_KEK);
 #pragma GCC diagnostic pop

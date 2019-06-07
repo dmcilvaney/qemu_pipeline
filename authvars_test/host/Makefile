@@ -18,7 +18,7 @@ BINARY = authvars_test
 
 DB = edk2_variable_test/Test_db.blob
 KEK = edk2_variable_test/Test_KEK.blob
-BLOBS = $(DB) $(KEK) ./test.blob
+BLOBS = $(DB) $(KEK)
 
 .PHONY: all
 all: $(BINARY)

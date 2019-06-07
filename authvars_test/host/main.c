@@ -43,12 +43,6 @@
 #include "edk2_variable_test/binaries.h"
 int main(void)
 {
-
-	wprintf(L"%x\n", (unsigned int)&test);
-	wprintf(L"%x\n", (unsigned int)&test_size);
-	wprintf(L"%x\n", (unsigned int)test_size);
-	wprintf(L"%s\n", test);
-
 	EFI_STATUS res;
 	res = VariableAuthOpteeRuntimeInitialize();
 
