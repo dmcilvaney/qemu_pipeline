@@ -9,6 +9,10 @@ extern GUID gEfiImageSecurityDatabaseGuid;
 extern EFI_GUID gEfiSecureBootDbImageGuid;
 extern EFI_GUID gEfiSecureBootKekImageGuid;
 
+extern INT32 PcdMaxVariableSize;
+extern INT32 PcdMaxHardwareErrorVariableSize;
+extern BOOLEAN PcdSecureBootEnable;
+
 typedef
 EFI_STATUS
 (EFIAPI *EFI_GET_VARIABLE)(
@@ -66,6 +70,9 @@ extern EFI_RUNTIME_SERVICES  *gRT;
 #define  SIZE_4KB    0x00001000
 #define  SIZE_8KB    0x00002000
 #define  SIZE_16KB   0x00004000
+
+#define PcdGet32(var) ((INT32)var)
+#define PcdGetBool(var) ((BOOLEAN)var)
 
 #define EFI_IMAGE_SECURITY_DATABASE_GUID \
   { \

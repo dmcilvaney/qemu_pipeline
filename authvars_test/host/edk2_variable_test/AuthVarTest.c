@@ -177,6 +177,8 @@ VerifyVariableEnumerable (
       Found ? L"YES" : L"NO");
   }
   VERIFY_ARE_EQUAL (BOOLEAN, ExpectedFound, Found);
+  FreePool(mEnumVariableName);
+  mEnumVariableName = NULL;
 }
 
 VOID
@@ -249,6 +251,7 @@ VerifyValidVarWriteReadEnumDel (
     VERIFY_ARE_EQUAL(UINTN, ActualDataSize, DataSize);
   }
   
+  wprintf(L"Allocating 0x%x\n", ActualDataSize);
   mActualImageData = AllocatePool(ActualDataSize);
   VERIFY_IS_NOT_NULL(mActualImageData);
 

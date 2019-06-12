@@ -77,8 +77,13 @@ ReallocatePool (
   IN VOID   *OldBuffer  OPTIONAL
   )
 {
+  VOID *temp = OldBuffer;
   if(OldBuffer) {
-    return realloc(OldBuffer, NewSize);
+    OldBuffer = realloc(OldBuffer, NewSize);
+    if(!OldBuffer) {
+      free(temp);
+    }
+    return OldBuffer;
   } else {
     return AllocateZeroPool(NewSize);
   }

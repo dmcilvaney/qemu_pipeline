@@ -19,9 +19,99 @@ THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
 WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 */
 
+/*
+#include <PiDxe.h>
+#include <Protocol/VariableWrite.h>
+#include <Protocol/Variable.h>
+#include <Protocol/VariableLock.h>
+#include <Protocol/VarCheck.h>
+#include <Protocol/SimpleFileSystem.h>
+
+#include <Library/UefiBootServicesTableLib.h>
+#include <Library/UefiRuntimeServicesTableLib.h>
+#include <Library/MemoryAllocationLib.h>
+#include <Library/UefiDriverEntryPoint.h>
+#include <Library/UefiRuntimeLib.h>
+#include <Library/BaseMemoryLib.h>
+#include <Library/DebugLib.h>
+#include <Library/PcdLib.h>
+#include <Library/PrintLib.h>
+#include <Library/UefiLib.h>
+#include <Library/BaseLib.h>
+#include <Library/OpteeClientApiLib.h>
+#include <Library/tee_client_api.h>
+#include <Library/TimerLib.h>
+#include <Library/PerformanceLib.h>
+#include <Library/DevicePathLib.h>
+
+#include <Guid/GlobalVariable.h>
+#include <Guid/EventGroup.h>
+#include <Guid/AuthenticatedVariableFormat.h>
+#include <Guid/ImageAuthentication.h>
+#include <Guid/OpteeTrustedAppGuids.h>
+
+#include <limits.h>
+*/
+
+/*
+Performance Tokens
+*/
+#define GET_VAR_TOK                     "VAR:GET"
+#define SET_VAR_TOK                     "VAR:SET"
+#define GET_NEXT_VAR_NAME_TOK           "VAR:GET-NEXT"
+#define QUERY_VAR_INFO_TOK              "VAR:QUERY"
+
+
+/*
+Logging Macros
+*/
+
+/*
+#define LOG_TRACE_FMT_HELPER(FUNC, FMT, ...) \
+  "AUTH-VAR[T]:%a:" FMT "%a\n", FUNC, __VA_ARGS__
+
+#define LOG_INFO_FMT_HELPER(FMT, ...) \
+  "AUTH-VAR[I]:" FMT "%a\n", __VA_ARGS__
+
+#define LOG_ERROR_FMT_HELPER(FMT, ...) \
+  "AUTH-VAR[E]:" FMT " (%a: %a, %d)\n", __VA_ARGS__
+
+#define LOG_INFO(...) \
+  DEBUG ((DEBUG_INFO | DEBUG_VARIABLE, LOG_INFO_FMT_HELPER (__VA_ARGS__, "")))
+
+#define LOG_VANILLA_TRACE(...) \
+  DEBUG ((DEBUG_VERBOSE | DEBUG_VARIABLE, __VA_ARGS__))
+
+#define LOG_TRACE(...) \
+  DEBUG ((DEBUG_VERBOSE | DEBUG_VARIABLE, LOG_TRACE_FMT_HELPER (__FUNCTION__, __VA_ARGS__, "")))
+
+#define LOG_ERROR(...) \
+  DEBUG ((DEBUG_ERROR, LOG_ERROR_FMT_HELPER (__VA_ARGS__, __FUNCTION__, __FILE__, __LINE__)))
+*/
+
+/*
+Adjustments for the inclusion of  UEFIVarServices.h as is.
+*/
+
+/*
+#if !defined(_Field_size_bytes_)
+# define _Field_size_bytes_(count)
+#endif
+
+typedef UINT8  BYTE;
+typedef CHAR16 WCHAR;
+typedef CHAR8 CHAR;
+*/
 #include "UEFIVarServices.h"
+
 #include "edk2/uefi.h"
 #include "uefi_driver.h"
+
+/*
+NTSTATUS codes from the Auth. Var. TA tha we need to specially handle.
+*/
+#define STATUS_BUFFER_TOO_SMALL          (0xC0000023L)
+#define STATUS_NOT_FOUND                 (0xC0000225L)
 
 /*
 Macro to turn on memory leak check on exit boot services.
@@ -55,26 +145,28 @@ typedef union _VARIABLE_RESULT {
 
 } VARIABLE_RESULT, *PVARIABLE_RESULT;
 
-// static EFI_HANDLE mImageHandle = NULL;
+static EFI_HANDLE mImageHandle = NULL;
 
-// GLOBAL_REMOVE_IF_UNREFERENCED CONST CHAR8 *mOperationStr[] = {
-//   "",
-//   "",
-//   "VSGetOp",
-//   "VSGetNextVarOp",
-//   "VSSetOp",
-//   "VSQueryInfoOp",
-//   "VSSignalExitBootServicesOp",
-// };
+/*
+GLOBAL_REMOVE_IF_UNREFERENCED CONST CHAR8 *mOperationStr[] = {
+  "",
+  "",
+  "VSGetOp",
+  "VSGetNextVarOp",
+  "VSSetOp",
+  "VSQueryInfoOp",
+  "VSSignalExitBootServicesOp",
+};
+*/
+VOID
+EFIAPI
+SecureBootHook(
+  IN CHAR16                                 *VariableName,
+  IN EFI_GUID                               *VendorGuid
+);
 
-// VOID
-// EFIAPI
-// SecureBootHook(
-//   IN CHAR16                                 *VariableName,
-//   IN EFI_GUID                               *VendorGuid
-// );
 
-// EFI_HANDLE  mHandle = NULL;
+EFI_HANDLE  mHandle = NULL;
 
 /*
 OpTEE GP Client API state for the Auth Var TA communications.
@@ -101,10 +193,6 @@ GLOBAL_REMOVE_IF_UNREFERENCED CONST CHAR8 *mCustomModeNames[] = {
   "Standard",
   "Custom"
 };
-BOOLEAN
-EfiAtRuntime() {
-  return FALSE;
-}
 
 /**
 Populate a GP API parameter set and invoke a command on the Auth. Var. TA.
@@ -291,7 +379,7 @@ OpteeRuntimeGetVariable(
   // Security: make sure external pointer values are copied locally to prevent
   // concurrent modification after validation.
   //
-  LocalVariableNameSize = StrSize(VariableName) / 2;
+  LocalVariableNameSize = StrSize(VariableName);
   LocalDataSize = *DataSize;
 
   LOG_TRACE("LocalDataSize is 0x%x", LocalDataSize);
@@ -357,8 +445,7 @@ OpteeRuntimeGetVariable(
     CopyMem(&VariableParam->GetParam.VendorGuid, VendorGuid, sizeof(VariableParam->GetParam.VendorGuid));
     //CopyMem(&VariableParam->GetParam.VariableName, VariableName, LocalVariableNameSize);
     FixWideString(VariableName,(INT16*)&VariableParam->GetParam.VariableName);
-
-    LOG_TRACE("Get Variable: '%S'",VariableName);
+    LOG_TRACE("Get Variable: '%S'", VariableName);
     Status = OpteeRuntimeVariableInvokeCommand(
       VSGetOp,
       VariableParamSize,
@@ -397,8 +484,6 @@ OpteeRuntimeGetVariable(
     if (Attributes != NULL) {
       *Attributes = VariableResult->GetResult.Attributes;
     }
-
-    wprintf(L"0x%x\n", Status);
 
     if (EFI_ERROR(Status)) {
       goto Exit;
@@ -452,6 +537,8 @@ OpteeRuntimeGetNextVariableName(
   UINT32 LocalInVariableNameSize;
   UINT32 LocalOutVariableNameSize;
 
+  wprintf(L"VariableName at 0x%x with size 0x%x\n", (INTN)VariableName, *VariableNameSize);
+
   if (EfiAtRuntime()) {
     Status = EFI_UNSUPPORTED;
     goto Exit;
@@ -485,10 +572,10 @@ OpteeRuntimeGetNextVariableName(
     LocalInVariableNameSize = 0;
   }
   else {
-    LocalInVariableNameSize = StrSize(VariableName);
+    LocalInVariableNameSize = StrSize(VariableName) / 2; // Only have half as much room as normal due to 32->16 bit
   }
 
-  LocalOutVariableNameSize = *VariableNameSize;
+  LocalOutVariableNameSize = *VariableNameSize  / 2;
 
   {
     PVARIABLE_PARAM  VariableParam = (PVARIABLE_PARAM)mVariableParamMem.buffer;
@@ -551,7 +638,6 @@ OpteeRuntimeGetNextVariableName(
     CopyMem(&VariableParam->GetNextParam.VendorGuid, VendorGuid, sizeof(VariableParam->GetNextParam.VendorGuid));
     //CopyMem(&VariableParam->GetNextParam.VariableName, VariableName, LocalInVariableNameSize);
     FixWideString(VariableName,(INT16*)&VariableParam->GetParam.VariableName);
-
     LOG_TRACE("Get Next Variable: '%S'", VariableName);
     Status = OpteeRuntimeVariableInvokeCommand(VSGetNextVarOp,
       VariableParamSize,
@@ -561,6 +647,10 @@ OpteeRuntimeGetNextVariableName(
       &ResultSize,
       &AuthvarStatus);
 
+    wprintf(L"OPTEE reports needing 0x%x bytes\n", ResultSize);
+    wprintf(L"Leaving 0x%x bytes for the name\n", ResultSize - sizeof(VARIABLE_GET_NEXT_RESULT));
+    wprintf(L"We need 0x%x bytes to store that\n", (ResultSize - sizeof(VARIABLE_GET_NEXT_RESULT))*2);
+
     if (Status == EFI_BUFFER_TOO_SMALL) {
       LOG_TRACE("Get Next Variable: Buffer too small");
 
@@ -569,12 +659,14 @@ OpteeRuntimeGetNextVariableName(
       // so in order to turn this into the size of the *data* required we need
       // to subtract header.
       //
-      ASSERT(ResultSize >= sizeof(VARIABLE_GET_RESULT));
-      *VariableNameSize = (ResultSize - sizeof(VARIABLE_GET_RESULT)) * 2;
+      ASSERT(ResultSize >= sizeof(VARIABLE_GET_NEXT_RESULT));
+      *VariableNameSize = ResultSize - sizeof(VARIABLE_GET_NEXT_RESULT);
+      *VariableNameSize *= 2;
 
     } else if (Status == EFI_SUCCESS) {
       LOG_TRACE("Get Next Variable Success");
-      *VariableNameSize = VariableResult->GetNextResult.VariableNameSize * 2;
+      *VariableNameSize = VariableResult->GetNextResult.VariableNameSize;
+      *VariableNameSize *= 2;
     } else {
       if (Status == EFI_NOT_FOUND) {
         LOG_TRACE("Get next: Not found");
@@ -592,7 +684,8 @@ OpteeRuntimeGetNextVariableName(
     //
     if (VariableResult->GetNextResult.VariableNameSize > LocalOutVariableNameSize) {
 
-      DEBUG((DEBUG_VARIABLE, "Name buffer overflow, result VariableNameSize=0x%X\n", VariableResult->GetNextResult.VariableNameSize));
+      DEBUG((DEBUG_VARIABLE, "Name buffer overflow, result VariableNameSize=0x%X\n",
+        VariableResult->GetNextResult.VariableNameSize));
 
       Status = EFI_BAD_BUFFER_SIZE;
       goto Exit;
@@ -606,7 +699,7 @@ OpteeRuntimeGetNextVariableName(
 Exit:
 
   //PERF_END(mImageHandle, GET_NEXT_VAR_NAME_TOK, NULL, 0);
-
+  wprintf(L"On exit: Reporting needing 0x%x bytes\n", *VariableNameSize);
   return Status;
 }
 
@@ -665,7 +758,7 @@ OpteeRuntimeSetVariable(
     goto Exit;
   }
 
-  LOG_TRACE("\\%S (DataSize=0x%x)", VariableName, DataSize);
+  LOG_TRACE("%S (DataSize=0x%x)", VariableName, DataSize);
 
   //
   // Test hook to allow the test to set the session ID used with the TA.
@@ -686,7 +779,6 @@ OpteeRuntimeSetVariable(
   // concurrent modification after validation.
   //
   VariableNameSize = StrSize(VariableName);
-  wprintf(L"Strsize: 0x%x\n",VariableNameSize);
 
   {
     PVARIABLE_PARAM  VariableParam = (PVARIABLE_PARAM)mVariableParamMem.buffer;
@@ -762,9 +854,9 @@ OpteeRuntimeSetVariable(
   }
 
 Exit:
-  // if (!EFI_ERROR(Status)) {
-  //   SecureBootHook(VariableName, VendorGuid);
-  // }
+  if (!EFI_ERROR(Status)) {
+    SecureBootHook(VariableName, VendorGuid);
+  }
 
   //PERF_END(mImageHandle, SET_VAR_TOK, NULL, 0);
 
@@ -897,14 +989,16 @@ TaOpenSession(
 {
   TEEC_Result  TeecResult;
   uint32_t     ErrorOrigin;
-  TEEC_UUID    TeecUuid = TA_AUTHVARS_UUID;
+  TEEC_UUID    TeecUuid;
   EFI_STATUS   Status = EFI_SUCCESS;
 
-  // CopyMem(&TeecUuid, &gOpteeAuthVarTaGuid, sizeof(TeecUuid));
 
-  // TeecUuid.timeLow = SwapBytes32(TeecUuid.timeLow);
-  // TeecUuid.timeMid = SwapBytes16(TeecUuid.timeMid);
-  // TeecUuid.timeHiAndVersion = SwapBytes16(TeecUuid.timeHiAndVersion);
+  CopyMem(&TeecUuid, &gOpteeAuthVarTaGuid, sizeof(TeecUuid));
+/*
+  TeecUuid.timeLow = SwapBytes32(TeecUuid.timeLow);
+  TeecUuid.timeMid = SwapBytes16(TeecUuid.timeMid);
+  TeecUuid.timeHiAndVersion = SwapBytes16(TeecUuid.timeHiAndVersion);
+*/
   //
   // Open a session to the Auth Var TA
   //
@@ -930,9 +1024,10 @@ TaOpenSession(
   // OpTEE Client API will align the buffers for us.
   //
   mVariableParamMem.size = MAX(
-    (0x2000),
-    (0x8000)) +
+    PcdGet32(PcdMaxVariableSize),
+    PcdGet32(PcdMaxHardwareErrorVariableSize)) +
     sizeof(VARIABLE_PARAM);
+
   mVariableParamMem.flags = (TEEC_MEM_INPUT);
 
   TeecResult = TEEC_AllocateSharedMemory(&mTeecContext, &mVariableParamMem);
@@ -975,9 +1070,9 @@ InitSecureBootVariables(
   UINT8 SecureBootEnable;
   EFI_STATUS Status;
 
-  // LOG_INFO(
-  //   "Initializing SecureBoot Variables (PcdSecureBootEnable=%d)",
-  //   PcdGetBool(PcdSecureBootEnable));
+  LOG_INFO(
+    "Initializing SecureBoot Variables (PcdSecureBootEnable=%d)",
+    PcdGetBool(PcdSecureBootEnable));
 
   //
   // If the PK exits then 
@@ -1017,7 +1112,7 @@ InitSecureBootVariables(
 
   if (EFI_ERROR(Status)) {
     LOG_ERROR(
-      "OpteeRuntimeSetVariable(\\%S) failed. (Status=%x)",
+      "OpteeRuntimeSetVariable(%S) failed. (Status=%x)",
       EFI_SETUP_MODE_NAME,
       Status);
 
@@ -1052,7 +1147,7 @@ InitSecureBootVariables(
     // "SecureBootEnable" not exist, initialize it in USER_MODE.
     //
     SecureBootEnable = SECURE_BOOT_DISABLE;
-    if (TRUE) {
+    if (PcdGetBool(PcdSecureBootEnable)) {
       SecureBootEnable = SECURE_BOOT_ENABLE;
     }
 
@@ -1065,7 +1160,7 @@ InitSecureBootVariables(
 
     if (EFI_ERROR(Status)) {
       LOG_ERROR(
-        "OpteeRuntimeSetVariable\\%S) failed. (Status=%x)",
+        "OpteeRuntimeSetVariable(%S) failed. (Status=%x)",
         EFI_SECURE_BOOT_ENABLE_NAME,
         Status);
 
@@ -1092,7 +1187,7 @@ InitSecureBootVariables(
 
   if (EFI_ERROR(Status)) {
     LOG_ERROR(
-      "OpteeRuntimeSetVariable(\\%S) failed. (Status=%x)",
+      "OpteeRuntimeSetVariable(%S) failed. (Status=%x)",
       EFI_SECURE_BOOT_MODE_NAME,
       Status);
 
@@ -1113,7 +1208,7 @@ InitSecureBootVariables(
 
   if (EFI_ERROR(Status)) {
     LOG_ERROR(
-      "OpteeRuntimeSetVariable(\\%S) failed. (Status=%x)",
+      "OpteeRuntimeSetVariable(%S) failed. (Status=%x)",
       EFI_CUSTOM_MODE_NAME,
       Status);
 
@@ -1130,173 +1225,175 @@ Exit:
   return Status;
 }
 
-// EFI_STATUS
-// OpteeRuntimeVariableWriteLogToDisk(
-//   IN CONST VAR_LOG_ENTRY  *LogBuffer,
-//   IN UINTN                LogCount
-// )
-// {
-//   EFI_STATUS Status = EFI_SUCCESS;
-//   EFI_SIMPLE_FILE_SYSTEM_PROTOCOL *Fs = NULL;
-//   EFI_FILE_HANDLE RootVolume = NULL;
-//   EFI_FILE_PROTOCOL *File = NULL;
-//   EFI_HANDLE MediaHandle = NULL;
-//   EFI_DEVICE_PATH_PROTOCOL *DevicePath = NULL;
-//   EFI_DEVICE_PATH_PROTOCOL *IntermediateDevicePath = NULL;
-//   CONST UINTN StrBufferCharCount = 256;
-//   CHAR16 StrBuffer[StrBufferCharCount];
-//   UINTN FormattedCharCount;
-//   UINTN LogIndex;
-//   UINTN WriteByteCount;
-//   CONST CHAR16 *DevicePathText;
+/*
+EFI_STATUS
+OpteeRuntimeVariableWriteLogToDisk(
+  IN CONST VAR_LOG_ENTRY  *LogBuffer,
+  IN UINTN                LogCount
+)
+{
+  EFI_STATUS Status = EFI_SUCCESS;
+  EFI_SIMPLE_FILE_SYSTEM_PROTOCOL *Fs = NULL;
+  EFI_FILE_HANDLE RootVolume = NULL;
+  EFI_FILE_PROTOCOL *File = NULL;
+  EFI_HANDLE MediaHandle = NULL;
+  EFI_DEVICE_PATH_PROTOCOL *DevicePath = NULL;
+  EFI_DEVICE_PATH_PROTOCOL *IntermediateDevicePath = NULL;
+  CONST UINTN StrBufferCharCount = 256;
+  CHAR16 StrBuffer[StrBufferCharCount];
+  UINTN FormattedCharCount;
+  UINTN LogIndex;
+  UINTN WriteByteCount;
+  CONST CHAR16 *DevicePathText;
 
-//   if (LogCount == 0) {
-//     goto Exit;
-//   }
+  if (LogCount == 0) {
+    goto Exit;
+  }
 
-//   DevicePathText = (CONST CHAR16 *) FixedPcdGetPtr(
-//     PcdStorageMediaPartitionDevicePath);
+  DevicePathText = (CONST CHAR16 *) FixedPcdGetPtr(
+    PcdStorageMediaPartitionDevicePath);
 
-//   if ((DevicePathText == NULL) || (*DevicePathText == L'\0')) {
-//     Status = EFI_INVALID_PARAMETER;
-//     LOG_ERROR("PcdStorageMediaPartition is unspecified");
-//     goto Exit;
-//   }
+  if ((DevicePathText == NULL) || (*DevicePathText == L'\0')) {
+    Status = EFI_INVALID_PARAMETER;
+    LOG_ERROR("PcdStorageMediaPartition is unspecified");
+    goto Exit;
+  }
 
-//   IntermediateDevicePath = DevicePath;
-//   Status = gBS->LocateDevicePath(
-//     &gEfiSimpleFileSystemProtocolGuid,
-//     &IntermediateDevicePath,
-//     &MediaHandle);
+  IntermediateDevicePath = DevicePath;
+  Status = gBS->LocateDevicePath(
+    &gEfiSimpleFileSystemProtocolGuid,
+    &IntermediateDevicePath,
+    &MediaHandle);
 
-//   if (Status == EFI_NOT_FOUND) {
-//     Status = EFI_SUCCESS;
-//     LOG_INFO("%s FAT partition is not ready yet", DevicePathText);
-//     goto Exit;
-//   }
+  if (Status == EFI_NOT_FOUND) {
+    Status = EFI_SUCCESS;
+    LOG_INFO("%s FAT partition is not ready yet", DevicePathText);
+    goto Exit;
+  }
 
-//   if (EFI_ERROR(Status)) {
-//     LOG_ERROR("gBS->LocateDevicePath() failed. (Status=%r)", Status);
-//     goto Exit;
-//   }
+  if (EFI_ERROR(Status)) {
+    LOG_ERROR("gBS->LocateDevicePath() failed. (Status=%r)", Status);
+    goto Exit;
+  }
 
-//   LOG_INFO(
-//     "Writing %u log entries to FAT partition %s",
-//     (UINT32)LogCount,
-//     DevicePathText);
+  LOG_INFO(
+    "Writing %u log entries to FAT partition %s",
+    (UINT32)LogCount,
+    DevicePathText);
 
-//   Status = gBS->OpenProtocol(
-//     MediaHandle,
-//     &gEfiSimpleFileSystemProtocolGuid,
-//     (VOID **)&Fs,
-//     mImageHandle,
-//     NULL,
-//     EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+  Status = gBS->OpenProtocol(
+    MediaHandle,
+    &gEfiSimpleFileSystemProtocolGuid,
+    (VOID **)&Fs,
+    mImageHandle,
+    NULL,
+    EFI_OPEN_PROTOCOL_GET_PROTOCOL);
 
-//   if (EFI_ERROR(Status)) {
-//     LOG_ERROR("gBS->OpenProtocol(gEfiSimpleFileSystemProtocolGuid) failed. (Status=%r)", Status);
-//     goto Exit;
-//   }
+  if (EFI_ERROR(Status)) {
+    LOG_ERROR("gBS->OpenProtocol(gEfiSimpleFileSystemProtocolGuid) failed. (Status=%r)", Status);
+    goto Exit;
+  }
 
-//   Status = Fs->OpenVolume(Fs, &RootVolume);
-//   if (EFI_ERROR(Status)) {
-//     LOG_ERROR("Fs->OpenVolume() failed. (Status=%r)", Status);
-//     goto Exit;
-//   }
-//   ASSERT(RootVolume != NULL);
+  Status = Fs->OpenVolume(Fs, &RootVolume);
+  if (EFI_ERROR(Status)) {
+    LOG_ERROR("Fs->OpenVolume() failed. (Status=%r)", Status);
+    goto Exit;
+  }
+  ASSERT(RootVolume != NULL);
 
-//   Status = RootVolume->Open(
-//     RootVolume,
-//     &File,
-//     L"VarLog.txt",
-//     EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE | EFI_FILE_MODE_CREATE,
-//     0);
+  Status = RootVolume->Open(
+    RootVolume,
+    &File,
+    L"VarLog.txt",
+    EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE | EFI_FILE_MODE_CREATE,
+    0);
 
-//   if (EFI_ERROR(Status)) {
-//     LOG_ERROR("RootVolume->Open() failed. (Status=%r)", Status);
-//     goto Exit;
-//   }
+  if (EFI_ERROR(Status)) {
+    LOG_ERROR("RootVolume->Open() failed. (Status=%r)", Status);
+    goto Exit;
+  }
 
-//   Status = File->SetPosition(File, 0);
-//   if (EFI_ERROR(Status)) {
-//     LOG_ERROR("File->SetPosition(0) failed. (Status=%r)", Status);
-//     goto Exit;
-//   }
+  Status = File->SetPosition(File, 0);
+  if (EFI_ERROR(Status)) {
+    LOG_ERROR("File->SetPosition(0) failed. (Status=%r)", Status);
+    goto Exit;
+  }
 
-//   for (LogIndex = 0; LogIndex < LogCount; ++LogIndex) {
+  for (LogIndex = 0; LogIndex < LogCount; ++LogIndex) {
 
-//     FormattedCharCount = UnicodeSPrint(
-//       StrBuffer,
-//       sizeof(StrBuffer),
-//       L"%u\t%u\t%a\t%s\t%d\t%u\t"
-//       L"%u\t%u\t%u\t%u\t%u\t%u\t%u\t%u\t0x%08x\n",
-//       (UINT32)LogIndex,
-//       LogBuffer->StartTimeMs,
-//       mOperationStr[LogBuffer->Operation],
-//       (LogBuffer->StrParam[0] == L'\0') ? L"NA" : LogBuffer->StrParam,
-//       LogBuffer->IntParam,
-//       LogBuffer->DurationMs,
-//       (UINT32)LogBuffer->CacheRebuildCount,
-//       LogBuffer->CacheRebuildDurationMs,
-//       (UINT32)LogBuffer->IsNV,
-//       (UINT32)LogBuffer->IsBS,
-//       (UINT32)LogBuffer->IsTimeAuthWrite,
-//       (UINT32)LogBuffer->IsAuthWrite,
-//       (UINT32)LogBuffer->IsAppendWrite,
-//       (UINT32)LogBuffer->IsHwError,
-//       LogBuffer->Status);
+    FormattedCharCount = UnicodeSPrint(
+      StrBuffer,
+      sizeof(StrBuffer),
+      L"%u\t%u\t%a\t%s\t%d\t%u\t"
+      L"%u\t%u\t%u\t%u\t%u\t%u\t%u\t%u\t0x%08x\n",
+      (UINT32)LogIndex,
+      LogBuffer->StartTimeMs,
+      mOperationStr[LogBuffer->Operation],
+      (LogBuffer->StrParam[0] == L'\0') ? L"NA" : LogBuffer->StrParam,
+      LogBuffer->IntParam,
+      LogBuffer->DurationMs,
+      (UINT32)LogBuffer->CacheRebuildCount,
+      LogBuffer->CacheRebuildDurationMs,
+      (UINT32)LogBuffer->IsNV,
+      (UINT32)LogBuffer->IsBS,
+      (UINT32)LogBuffer->IsTimeAuthWrite,
+      (UINT32)LogBuffer->IsAuthWrite,
+      (UINT32)LogBuffer->IsAppendWrite,
+      (UINT32)LogBuffer->IsHwError,
+      LogBuffer->Status);
 
-//     WriteByteCount = FormattedCharCount * sizeof(CHAR16);
-//     Status = File->Write(
-//       File,
-//       &WriteByteCount,
-//       StrBuffer);
+    WriteByteCount = FormattedCharCount * sizeof(CHAR16);
+    Status = File->Write(
+      File,
+      &WriteByteCount,
+      StrBuffer);
 
-//     if (EFI_ERROR(Status)) {
-//       LOG_ERROR("File->Write() failed. (Status=%r)", Status);
-//       goto Exit;
-//     }
-//     ASSERT(WriteByteCount == FormattedCharCount * sizeof(CHAR16));
+    if (EFI_ERROR(Status)) {
+      LOG_ERROR("File->Write() failed. (Status=%r)", Status);
+      goto Exit;
+    }
+    ASSERT(WriteByteCount == FormattedCharCount * sizeof(CHAR16));
 
-//     LogBuffer++;
-//   }
+    LogBuffer++;
+  }
 
-//   LOG_INFO("Opened media and log is written successfully");
+  LOG_INFO("Opened media and log is written successfully");
 
-// Exit:
+Exit:
 
-//   if (File != NULL) {
-//     File->Flush(File);
-//     File->Close(File);
-//     File = NULL;
-//   }
+  if (File != NULL) {
+    File->Flush(File);
+    File->Close(File);
+    File = NULL;
+  }
 
-//   if (RootVolume != NULL) {
-//     RootVolume->Close(RootVolume);
-//     RootVolume = NULL;
-//   }
+  if (RootVolume != NULL) {
+    RootVolume->Close(RootVolume);
+    RootVolume = NULL;
+  }
 
-//   if (MediaHandle != NULL) {
-//     EFI_STATUS exitStatus = gBS->CloseProtocol(
-//       MediaHandle,
-//       &gEfiSimpleFileSystemProtocolGuid,
-//       mImageHandle,
-//       NULL);
+  if (MediaHandle != NULL) {
+    EFI_STATUS exitStatus = gBS->CloseProtocol(
+      MediaHandle,
+      &gEfiSimpleFileSystemProtocolGuid,
+      mImageHandle,
+      NULL);
 
-//     if (EFI_ERROR(exitStatus)) {
-//       LOG_ERROR("gBS->CloseProtocol() failed. (Status=%r)", exitStatus);
-//     }
+    if (EFI_ERROR(exitStatus)) {
+      LOG_ERROR("gBS->CloseProtocol() failed. (Status=%r)", exitStatus);
+    }
 
-//     Fs = NULL;
-//   }
+    Fs = NULL;
+  }
 
 
-//   if (DevicePath != NULL) {
-//     FreePool(DevicePath);
-//   }
+  if (DevicePath != NULL) {
+    FreePool(DevicePath);
+  }
 
-//   return Status;
-// }
+  return Status;
+}
+*/
 
 EFI_GUID AuthVarTestGuid = {0xDEADBEEF, 0x1234, 0x4321, {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}};
 #define BUILD_TEST_BUFFER(name, number, size) UINT8 name[size];{UINT32 i = 0; for (i = 0; i < size; i++) {name[i] = number;} }
@@ -1321,8 +1418,8 @@ VOID AuthVarHexDump(UINT8 *buffer, UINT32 size) {
     *(ptr++) = BitsToChar(byteL);
   }
   *ptr = '\0';
-  wprintf(L"0x%x:", (UINT32)buffer);
-  wprintf(L"%s", string);
+  LOG_INFO( "0x%x:", (UINT32)buffer);
+  LOG_INFO("%s", string);
 }
 
 VOID AuthVarFixBuffer(void *buf, UINT32 size) {
@@ -1358,20 +1455,21 @@ OpteeRuntimeOnExitBootServices(
   //
   // Plain signal with no parameters or results.
   //
-  // Status = OpteeRuntimeVariableInvokeCommand(
-  //   VSSignalExitBootServicesOp,
-  //   0,
-  //   NULL,
-  //   0,
-  //   NULL,
-  //   &ResultSize,
-  //   &AuthvarStatus);
-
+  /*
+  Status = OpteeRuntimeVariableInvokeCommand(
+    VSSignalExitBootServicesOp,
+    0,
+    NULL,
+    0,
+    NULL,
+    &ResultSize,
+    &AuthvarStatus);
+  */
   if (Status != EFI_SUCCESS) {
     //
     // Reboot the system.
     //
-    LOG_ERROR("Signalling exit boot service failed. (Status=%x)\nRebooting the system...", Status);
+    LOG_ERROR("Signalling exit boot service failed. (Status=%r)\nRebooting the system...", Status);
     //gRT->ResetSystem(EfiResetCold, EFI_SUCCESS, 0, L"Variable Exit Boot Services Notification Returned Error.");
   }
 
@@ -1393,7 +1491,7 @@ OpteeRuntimeOnExitBootServices(
 
   //OpteeClientApiFinalize();
 
-  LOG_TRACE("Status=%x", Status);
+  LOG_TRACE("Status=%r", Status);
 }
 
 
@@ -1409,24 +1507,26 @@ a notification function for an EVT_SIGNAL_VIRTUAL_ADDRESS_CHANGE event.
 EFI_STATUS
 EFIAPI
 VariableAuthOpteeRuntimeInitialize(
-  // IN EFI_HANDLE         ImageHandle,
-  // IN EFI_SYSTEM_TABLE   *SystemTable
+  IN EFI_HANDLE         ImageHandle,
+  IN EFI_SYSTEM_TABLE   *SystemTable
 )
 {
   EFI_STATUS   Status;
   TEEC_Result  TeecResult;
   //EFI_EVENT    ExitBootServiceEvent;
 
-  // mImageHandle = ImageHandle;
+  mImageHandle = ImageHandle;
 
-  // //
-  // // Initialize the library.
-  // //
-  // Status = OpteeClientApiInitialize(ImageHandle);
-  // if (EFI_ERROR(Status)) {
-  //   LOG_ERROR("OpteeClientApiInitialize() failed. (Status=%r)", Status);
-  //   goto Exit;
-  // }
+  //
+  // Initialize the library.
+  //
+  /*
+  Status = OpteeClientApiInitialize(ImageHandle);
+  if (EFI_ERROR(Status)) {
+    LOG_ERROR("OpteeClientApiInitialize() failed. (Status=%r)", Status);
+    goto Exit;
+  }
+  */
 
   //
   // Setup the TEE context.
@@ -1446,11 +1546,11 @@ VariableAuthOpteeRuntimeInitialize(
     goto Exit;
   }
 
-  // Status = InitSecureBootVariables();
-  // if (EFI_ERROR(Status)) {
-  //   LOG_ERROR("InitSecureBootVariables() failed. (Status=%r)", Status);
-  //   goto Exit;
-  // }
+  Status = InitSecureBootVariables();
+  if (EFI_ERROR(Status)) {
+    LOG_ERROR("InitSecureBootVariables() failed. (Status=%x)", Status);
+    goto Exit;
+  }
 
   //
   // Publish the runtime services.
@@ -1460,58 +1560,60 @@ VariableAuthOpteeRuntimeInitialize(
   gRT->SetVariable = OpteeRuntimeSetVariable;
   gRT->QueryVariableInfo = OpteeRuntimeQueryVariableInfo;
 
-  // //
-  // // Install the Variable Architectural Protocol on a new handle.
-  // //
-  // Status = gBS->InstallProtocolInterface(
-  //   &mHandle,
-  //   &gEfiVariableArchProtocolGuid,
-  //   EFI_NATIVE_INTERFACE,
-  //   NULL);
+  //
+  // Install the Variable Architectural Protocol on a new handle.
+  //
+  /*
+  Status = gBS->InstallProtocolInterface(
+    &mHandle,
+    &gEfiVariableArchProtocolGuid,
+    EFI_NATIVE_INTERFACE,
+    NULL);
 
-  // if (EFI_ERROR(Status)) {
-  //   LOG_ERROR(
-  //     "InstallProtocolInterface(gEfiVariableArchProtocolGuid) failed. (Status=%r)",
-  //     Status);
+  if (EFI_ERROR(Status)) {
+    LOG_ERROR(
+      "InstallProtocolInterface(gEfiVariableArchProtocolGuid) failed. (Status=%r)",
+      Status);
 
-  //   goto Exit;
-  // }
+    goto Exit;
+  }
 
-  // //
-  // // Install the Variable Write Architectural Protocol on a new handle.
-  // //
-  // Status = gBS->InstallProtocolInterface(
-  //   &mHandle,
-  //   &gEfiVariableWriteArchProtocolGuid,
-  //   EFI_NATIVE_INTERFACE,
-  //   NULL);
+  //
+  // Install the Variable Write Architectural Protocol on a new handle.
+  //
+  Status = gBS->InstallProtocolInterface(
+    &mHandle,
+    &gEfiVariableWriteArchProtocolGuid,
+    EFI_NATIVE_INTERFACE,
+    NULL);
 
-  // if (EFI_ERROR(Status)) {
-  //   LOG_ERROR(
-  //     "InstallProtocolInterface(gEfiVariableWriteArchProtocolGuid) failed. (Status=%r)",
-  //     Status);
+  if (EFI_ERROR(Status)) {
+    LOG_ERROR(
+      "InstallProtocolInterface(gEfiVariableWriteArchProtocolGuid) failed. (Status=%r)",
+      Status);
 
-  //   goto Exit;
-  // }
+    goto Exit;
+  }
 
-  // //
-  // // Register the event to inform auth. variable that it is at runtime.
-  // //
-  // Status = gBS->CreateEventEx(
-  //   EVT_NOTIFY_SIGNAL,
-  //   TPL_CALLBACK,
-  //   OpteeRuntimeOnExitBootServices,
-  //   NULL,
-  //   &gEfiEventExitBootServicesGuid,
-  //   &ExitBootServiceEvent);
+  //
+  // Register the event to inform auth. variable that it is at runtime.
+  //
+  Status = gBS->CreateEventEx(
+    EVT_NOTIFY_SIGNAL,
+    TPL_CALLBACK,
+    OpteeRuntimeOnExitBootServices,
+    NULL,
+    &gEfiEventExitBootServicesGuid,
+    &ExitBootServiceEvent);
 
-  // if (EFI_ERROR(Status)) {
-  //   LOG_ERROR(
-  //     "CreateEventEx(gEfiEventExitBootServicesGuid) failed. (Status=%r)",
-  //     Status);
+  if (EFI_ERROR(Status)) {
+    LOG_ERROR(
+      "CreateEventEx(gEfiEventExitBootServicesGuid) failed. (Status=%r)",
+      Status);
 
-  //   goto Exit;
-  // }
+    goto Exit;
+  }
+  */
 
 Exit:
   return Status;

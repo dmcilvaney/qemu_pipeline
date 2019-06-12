@@ -8,5 +8,9 @@ GUID gEfiImageSecurityDatabaseGuid  = { 0xd719b2cb, 0x3d3a, 0x4596, {0xa3, 0xbc,
 EFI_GUID gEfiSecureBootDbImageGuid = {0};
 EFI_GUID gEfiSecureBootKekImageGuid = {0};
 
+INT32 PcdMaxVariableSize = 0x2000;
+INT32 PcdMaxHardwareErrorVariableSize = 0x8000;
+BOOLEAN PcdSecureBootEnable = FALSE;
+
 EFI_RUNTIME_SERVICES  Services = {};
 EFI_RUNTIME_SERVICES  *gRT = &Services;

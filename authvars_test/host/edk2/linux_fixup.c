@@ -19,20 +19,16 @@ void FixWideString(wchar_t *In, INT16 *Out) {
 void RestoreWideString(INT16 *In, wchar_t *Out) {
     wchar_t *wc = 0;
     INT16 *sc = (INT16*)In;
-    INT32 length = 0;
+    INT32 length = 1; // At least a null char
     while(*sc) {
         length++;
         sc++;
     }
-    //wprintf(L"len:%d\n", length);
-    wc = &(Out[length]);
-
-    //wprintf(L"0x%x, 0x%x\n", (INTN)Out, (INTN)wc);
+    wc = &(Out[length - 1]);
 
     while(sc >= In) {
         //wprintf(L"%d -- ",DELTA(wc,Out));
         *wc = *sc;
-        //wprintf(L"S:%x->W:%x\n", (INTN)*sc, (INTN) *wc);
         wc--;
         sc--;
     }
