@@ -10,15 +10,15 @@ SUB_DIRS = edk2 edk2_driver edk2_test_harness edk2_variable_test
 C_FILES = $(foreach dir,$(SUB_DIRS),$(wildcard $(dir)/*.c)) $(wildcard *.c)
 OBJS = $(C_FILES:.c=.o)
 
-CFLAGS += -Wall -I../ta/include -I$(TEEC_EXPORT)/include -I./include -I./ -fmax-errors=2 -Werror
+CFLAGS += -Wall -I../ta/include -I$(TEEC_EXPORT)/include -I./include -I./ -fmax-errors=2 -Werror -fbounds-check -g
 #Add/link other required libraries here
-LDADD += -l:libteec.a -L$(TEEC_EXPORT)/lib
+LDADD += -l:libteec.a -L$(TEEC_EXPORT)/lib -fbounds-check
 
 BINARY = authvars_test
 
 DB = edk2_variable_test/Test_db.blob
 KEK = edk2_variable_test/Test_KEK.blob
-BLOBS = $(DB) $(KEK)
+BLOBS = $(DB) $(KEK) hello_world.blob
 
 .PHONY: all
 all: $(BINARY)
