@@ -14,21 +14,26 @@ trap cleanup EXIT
 TEST_COMMAND="cp /mnt/ci/*.ta /lib/optee_armtz && /mnt/ci/authvars_test selftest"
 GOOD_RESULT="Summary: Total = 7, Passed = 6, Failed = 1, Skipped = 0"
 
-REE_PIPE=/tmp/ree_32
-TEE_PIPE=/tmp/tee_32
+REE_PIPE=/tmp/ree_$RANDOM
+TEE_PIPE=/tmp/tee_$RANDOM
 echo Pipes: $REE_PIPE, $TEE_PIPE
 rm -f $REE_PIPE.in $REE_PIPE.out $TEE_PIPE.in $TEE_PIPE.out
 mkfifo $REE_PIPE.in $REE_PIPE.out $TEE_PIPE.in $TEE_PIPE.out
 
+REE_LOG=./logs/authvars_32_ree.log
+TEE_LOG=./logs/authvars_32_Tee.log
+QEMU_LOG=./logs/authvars_32_qemu.log
+RESULTS_LOG=./logs/authvars_32_results.log
+
 mkdir -p logs
-echo "REE LOG:" > ./logs/ree.log
-echo "TEE LOG:" > ./logs/tee.log
-cat $REE_PIPE.out >> ./logs/ree.log 2>&1 &
+echo "REE LOG:" > $REE_LOG
+echo "TEE LOG:" > $TEE_LOG
+cat $REE_PIPE.out >> $REE_LOG 2>&1 &
 PIDS="${PIDS} $!"
-cat $TEE_PIPE.out >> ./logs/tee.log 2>&1 &
+cat $TEE_PIPE.out >> $TEE_LOG 2>&1 &
 PIDS="${PIDS} $!"
 
-echo "QEMU LOG:" > ./logs/qemu.log
+echo "QEMU LOG:" > $QEMU_LOG
 
 echo "Mounting directory at $QEMU_MOUNT_DIR"
 QEMU_CMD="./qemu-system-arm \
@@ -40,13 +45,13 @@ QEMU_CMD="./qemu-system-arm \
     -m 1057 \
     -bios bl1.bin \
     -fsdev local,id=fsdev0,path=$QEMU_MOUNT_DIR,security_model=none -device virtio-9p-device,fsdev=fsdev0,mount_tag=host"
-echo "Command:  $QEMU_CMD" >> ./logs/qemu.log
-$QEMU_CMD >> ./logs/qemu.log 2>&1 &
+echo "Command:  $QEMU_CMD" >> $QEMU_LOG
+$QEMU_CMD >> $QEMU_LOG 2>&1 &
 PIDS="${PIDS} $!"
 
 # Wait for QEMU to boot
 echo QEMU started
-while ! grep "buildroot login:" ./logs/ree.log > /dev/null; do
+while ! grep "buildroot login:" $REE_LOG > /dev/null; do
     sleep 1
 done
 
@@ -75,31 +80,31 @@ echo "Command sent"
 #Seperate the results from the login and command logs
 sleep 1
 
-echo "RESULTS LOG:" > ./logs/results.log
-tail -f -n 0 ./logs/ree.log >> ./logs/results.log &
+echo "RESULTS LOG:" > $RESULTS_LOG
+tail -f -n 0 $REE_LOG >> $RESULTS_LOG &
 PIDS="${PIDS} $!"
 
 echo "Waiting for tests to finish"
-while ! grep "$QEMU_TEST_FLAG" ./logs/results.log > /dev/null; do
+while ! grep "$QEMU_TEST_FLAG" $RESULTS_LOG > /dev/null; do
     sleep 1
     # tail won't update sometimes, force the file to update?
-    cat ./logs/ree.log > /dev/null
+    cat $REE_LOG > /dev/null
 done
 
-if ! grep "$GOOD_RESULT" ./logs/results.log > /dev/null; then
+if ! grep "$GOOD_RESULT" $RESULTS_LOG > /dev/null; then
     echo "Test failed"
     echo ""
     echo "REE:"
     echo ""
-    cat ./logs/ree.log
+    cat $REE_LOG
     echo ""
     echo "TEE:"
     echo ""
-    cat ./logs/tee.log
+    cat $TEE_LOG
     echo ""
     echo "Results:"
     echo ""
-    cat ./logs/results.log
+    cat $QEMU_LOG
 
     rm -f $REE_PIPE.in $REE_PIPE.out $TEE_PIPE.in $TEE_PIPE.out
     exit 1
@@ -107,4 +112,4 @@ fi
 
 rm -f $REE_PIPE.in $REE_PIPE.out $TEE_PIPE.in $TEE_PIPE.out
 echo "Done!"
-cat ./logs/results.log
+cat $RESULTS_LOG

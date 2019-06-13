@@ -11,8 +11,8 @@ function cleanup {
 trap cleanup EXIT
 
 # Local files are available in /mnt/ci/
-TEST_COMMAND="cp /mnt/ci/*.ta /lib/optee_armtz && /mnt/ci/ftpm_test"
-GOOD_RESULT="fTPM TA selftest returned 0"
+TEST_COMMAND="cp /mnt/ci/*.ta /lib/optee_armtz && /mnt/ci/authvars_test selftest"
+GOOD_RESULT="Summary: Total = 7, Passed = 6, Failed = 1, Skipped = 0"
 
 REE_PIPE=/tmp/ree_$RANDOM
 TEE_PIPE=/tmp/tee_$RANDOM
@@ -20,10 +20,10 @@ echo Pipes: $REE_PIPE, $TEE_PIPE
 rm -f $REE_PIPE.in $REE_PIPE.out $TEE_PIPE.in $TEE_PIPE.out
 mkfifo $REE_PIPE.in $REE_PIPE.out $TEE_PIPE.in $TEE_PIPE.out
 
-REE_LOG=./logs/ftpm_64_ree.log
-TEE_LOG=./logs/ftpm_64_Tee.log
-QEMU_LOG=./logs/ftpm_64_qemu.log
-RESULTS_LOG=./logs/ftpm_64_results.log
+REE_LOG=./logs/authvars_64_ree.log
+TEE_LOG=./logs/authvars_64_Tee.log
+QEMU_LOG=./logs/authvars_64_qemu.log
+RESULTS_LOG=./logs/authvars_64_results.log
 
 mkdir -p logs
 echo "REE LOG:" > $REE_LOG
