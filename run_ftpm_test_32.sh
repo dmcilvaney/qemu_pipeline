@@ -11,7 +11,7 @@ function cleanup {
 trap cleanup EXIT
 
 # Local files are available in /mnt/ci/
-TEST_COMMAND="cp /mnt/ci/*.ta /lib/optee_armtz && /mnt/ci/ftpm_test"
+TEST_COMMAND="cp /mnt/ci/*.ta /lib/optee_armtz && /mnt/ci/ftpm_test_32/ftpm_test"
 GOOD_RESULT="fTPM TA selftest returned 0"
 
 REE_PIPE=/tmp/ree_$RANDOM

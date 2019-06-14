@@ -11,7 +11,7 @@ function cleanup {
 trap cleanup EXIT
 
 # Local files are available in /mnt/ci/
-TEST_COMMAND="cp /mnt/ci/*.ta /lib/optee_armtz && /mnt/ci/authvars_test selftest"
+TEST_COMMAND="cp /mnt/ci/*.ta /lib/optee_armtz && /mnt/ci/authvars_test_32/authvars_test selftest"
 GOOD_RESULT="Summary: Total = 7, Passed = 6, Failed = 1, Skipped = 0"
 
 REE_PIPE=/tmp/ree_$RANDOM
