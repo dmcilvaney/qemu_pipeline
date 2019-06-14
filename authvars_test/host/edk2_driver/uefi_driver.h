@@ -1,3 +1,6 @@
+/* Copyright (c) Microsoft Corporation. All rights reserved.
+   Licensed under the MIT License. */
+
 #ifndef UEFI_DRIVER_H
 #define UEFI_DRIVER_H
 #pragma once

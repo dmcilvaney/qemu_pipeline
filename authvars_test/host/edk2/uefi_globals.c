@@ -1,3 +1,6 @@
+/* Copyright (c) Microsoft Corporation. All rights reserved.
+   Licensed under the MIT License. */
+
 #include "uefi_globals.h"
 
 GUID gOpteeAuthVarTaGuid = { 0x2d57c0f7, 0xbddf, 0x48ea, { 0x83, 0x2f, 0xd8, 0x4a, 0x1a, 0x21, 0x93, 0x01 }};

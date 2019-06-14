@@ -1,3 +1,6 @@
+/* Copyright (c) Microsoft Corporation. All rights reserved.
+   Licensed under the MIT License. */
+
 /*
  * For a file "file.bin", EXTERNAL_BIN(file) maps the linker symbol
  *  '_binary_file_bin_start' ->  static const char *file;
