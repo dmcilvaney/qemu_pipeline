@@ -3,6 +3,7 @@ SHELL = bash
 
 QEMU_MOUNT_DIR ?= $(abspath $(shell realpath ~/qemu_mnt))
 
+
 .PHONY: all test update run_32 run_64
 all: update
 update: tar_32 tar_64
@@ -123,36 +124,57 @@ $(TAR_64_NAME): build_64
 	cp qemu_64/out-br/images/rootfs.cpio.gz qemu_64_tar/
 	tar -zcvf $(TAR_64_NAME) qemu_64_tar
 
-.PHONY: build_32 build_64
-build_32: google_repo/repo
+.PHONY: build_32 build_64 download_32 download_64 optee_32 optee_64
+
+build_32: download_32
+	cd qemu_32/build
+	$(MAKE)
+
+build_64: download_64
+	cd qemu_64/build
+	$(MAKE)
+
+optee_32: download_32
+	cd qemu_32/build
+	$(MAKE) optee-client-common
+
+optee_64: download_64
+	cd qemu_64/build
+	$(MAKE) optee-client-common
+
+download_32: google_repo/repo
 	mkdir -p qemu_32
 	cd qemu_32
 	../google_repo/repo init -u https://github.com/OP-TEE/manifest.git -m default.xml
-	../google_repo/repo sync -j10
+	../google_repo/repo sync -j50
 	cd build
 	$(MAKE) toolchains
-	$(MAKE)
 
-build_64: google_repo/repo
+download_64: google_repo/repo
 	mkdir -p qemu_64
 	cd qemu_64
 	../google_repo/repo init -u https://github.com/OP-TEE/manifest.git -m qemu_v8.xml
-	../google_repo/repo sync -j10 --no-clone-bundle
+	../google_repo/repo sync -j50 --no-clone-bundle
 	cd build
 	$(MAKE) toolchains
-	$(MAKE)
 
 google_repo/repo:
 	mkdir -p google_repo
 	curl https://storage.googleapis.com/git-repo-downloads/repo > google_repo/repo
 	chmod a+x google_repo/repo
 
-.PHONY: clean
-clean:
+.PHONY: clean clean_32 clean_64
+
+clean_32:
 	rm -rf qemu_32
 	rm -rf qemu_32_tar
 	rm -rf qemu_32_run
+	rm -rf google_repo
+	rm -f ../qemu_32.tar.gz
+
+clean_64:
 	rm -rf qemu_64
 	rm -rf qemu_64_tar
 	rm -rf qemu_64_run
 	rm -rf google_repo
+	rm -f ../qemu_64.tar.gz
