@@ -1,4 +1,5 @@
 .vscode
+qemu_build/google_repo/
 qemu_build/qemu_32/
 qemu_build/qemu_64/
 qemu_build/qemu_32_run/
@@ -12,3 +13,5 @@ authvars_test/host/authvars_test
 /authvars_test/host/**/*.blob
 ftpm_test/host/ftpm_test
 /ftpm_test/host/**/*.o
+toolchains/
+tests/
