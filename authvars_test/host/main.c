@@ -57,13 +57,17 @@ void print_buffer(char *data, unsigned int size) {
 	wprintf(L"\n");
 }
 
-void print_bytes(char *data, unsigned int size) {
+void print_bytes(char *data, unsigned int size, CHAR16 *name) {
 	int i;
 	wprintf(L"printf \"\%b\" \'");
 	for(i = 0; i < size; i++) {
 		wprintf(L"\\x%02x", data[i]);
 	}
-	wprintf(L"\'\n");
+	wprintf(L"\'");
+	if(name) {
+		wprintf(L"  >  %S.bin", name);
+	}
+	wprintf(L"\n");
 }
 
 char *read_file(char *file_name, unsigned int *file_size) {
@@ -131,7 +135,7 @@ int process_command(const char *data_in, unsigned int data_size, NV_op op, EFI_G
 					print_guid(*guid);
 					wprintf(L"   :   \"%S\" attr:0x%x\n", variable_name, attributes);
 					print_buffer(data, required_size);
-					print_bytes(data, required_size);
+					print_bytes(data, required_size, variable_name);
 					free(data);
 				}
 				return res;
@@ -168,9 +172,12 @@ int process_command(const char *data_in, unsigned int data_size, NV_op op, EFI_G
 						guid
 					);
 				} while (res == EFI_BUFFER_TOO_SMALL);
-				wprintf(L"Run next: \n\t./authvars_test getnext \"%S\" \"", temp_name);
-				print_guid(*guid);
-				wprintf(L"\"\n");
+
+				if (res == EFI_SUCCESS) {
+					wprintf(L"Run next: \n\t./authvars_test getnext \"%S\" \"", temp_name);
+					print_guid(*guid);
+					wprintf(L"\"\n");
+				}
 				free(temp_name);
 				return res;
 			}
@@ -270,6 +277,7 @@ EFI_GUID get_guid(char *str) {
 EXTERNAL_BIN(hello_world);
 #define TEST_BIN_VAR_NAME L"test_bin_var"
 #define TEST_BIN_GUID { 0x0d1a33d0, 0x0c94, 0x4ba5, { 0xaf, 0x22, 0xe1, 0xdc, 0xcb, 0x64, 0x70, 0xd3}}
+
 EFI_STATUS test_compile_time_buffer() {
 	EFI_GUID guid = TEST_BIN_GUID;
 	EFI_STATUS ret = EFI_SUCCESS;
