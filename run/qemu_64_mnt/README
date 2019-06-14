@@ -1,0 +1,2 @@
+Default mount location for 32 bit QEMU.
+Place files here to make them available in the emulator.
