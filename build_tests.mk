@@ -21,9 +21,12 @@ test_32: $(TESTS_32)
 test_64: $(TESTS_64)
 
 all: $(GCC_32) $(GCC_64)
+$(info OUT_DIR = $(OUT_DIR))
 OUT_DIR ?= ./tests/
+$(info OUT_DIR = $(OUT_DIR))
 
 OUT_PATH_32=$(abspath $(OUT_DIR)/$@/)
+$(info OUT_PATH_32 = $(OUT_PATH_32))
 $(TESTS_32): $(GCC_32_PATH) optee_32
 	$(MAKE) -C $(subst _32,,$@) \
 		CROSS_COMPILE=$(abspath $(GCC_32)) \
