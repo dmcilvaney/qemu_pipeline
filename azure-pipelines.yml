@@ -140,7 +140,7 @@ jobs:
       displayName: Build optee_client
 
     - script: |
-        make -f build_tests.mk $(Target)_test_$(TestArch) TEEC_EXPORT_PATH=$(Build.SourcesDirectory)/../optee_client/out/export/usr
+        make -f build_tests.mk $(Target)_test_$(TestArch) TEEC_EXPORT_PATH=$(Build.SourcesDirectory)/../optee_client/out/export/usr OUT_DIR=$(Build.SourcesDirectory)/run/qemu_$(TestArch)_mnt/
       displayName: Build test application
 
     - script: |
