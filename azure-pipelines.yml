@@ -40,14 +40,14 @@ jobs:
         wget https://releases.linaro.org/components/toolchain/binaries/6.4-2017.11/arm-linux-gnueabihf/gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf.tar.xz
         tar xf gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf.tar.xz
       displayName: Download GCC 32
-      condition: eq(variables['Arch'], '32')
+      condition: eq(variables['TestArch'], '32')
 
     - script: |
         echo '##vso[task.setvariable variable=CrossCompile]gcc-linaro-7.2.1-2017.11-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-'
         wget https://releases.linaro.org/components/toolchain/binaries/7.2-2017.11/aarch64-linux-gnu/gcc-linaro-7.2.1-2017.11-x86_64_aarch64-linux-gnu.tar.xz
         tar xf gcc-linaro-7.2.1-2017.11-x86_64_aarch64-linux-gnu.tar.xz
       displayName: Download GCC 64
-      condition: eq(variables['Arch'], '64')
+      condition: eq(variables['TestArch'], '64')
     
     - script: |
         cd ../optee_os
@@ -101,13 +101,13 @@ jobs:
         make -f build_tests.mk test_toolchains -j2
         echo '##vso[task.setvariable variable=CrossCompile]toolchains/gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf-'
       displayName: Download GCC 32
-      condition: eq(variables['Arch'], '32')
+      condition: eq(variables['TestArch'], '32')
 
     - script: |
         make -f build_tests.mk test_toolchains -j2
         echo '##vso[task.setvariable variable=CrossCompile]toolchains/gcc-linaro-7.2.1-2017.11-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-'
       displayName: Download GCC 64
-      condition: eq(variables['Arch'], '64')
+      condition: eq(variables['TestArch'], '64')
 
     - script: |
         cd ..
