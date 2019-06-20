@@ -68,7 +68,7 @@ jobs:
 
     - task: PublishBuildArtifacts@1
       inputs:
-        artifactName: '$(Target)-$(Crypto)-$(Arch)'
+        artifactName: '$(Target)-$(Crypto)-$(TestArch)'
         targetPath: '$(Build.ArtifactStagingDirectory)/ta'
 
   - job: RunQEMU
@@ -116,20 +116,20 @@ jobs:
       displayName: Build optee_client
 
     - script: |
-        make -f build_tests.mk $(Target)_test_$(Arch) TEEC_EXPORT_PATH=$(Build.SourcesDirectory)/../optee_client/out/export/usr
+        make -f build_tests.mk $(Target)_test_$(TestArch) TEEC_EXPORT_PATH=$(Build.SourcesDirectory)/../optee_client/out/export/usr
       displayName: Build test application
 
     - task: DownloadBuildArtifacts@0
       displayName: 'Download TA'
       inputs:
-        artifactName: '$(Target)-$(Crypto)-$(Arch)'
+        artifactName: '$(Target)-$(Crypto)-$(TestArch)'
         downloadPath: '$(System.ArtifactsDirectory)'
 
     - task: CopyFiles@2
       inputs:
-        sourceFolder: '$(System.ArtifactsDirectory)/$(Target)-$(Crypto)-$(Arch)/ta'
+        sourceFolder: '$(System.ArtifactsDirectory)/$(Target)-$(Crypto)-$(TestArch)/ta'
         contents: '*.ta'
-        targetFolder: '$(Build.SourcesDirectory)/run/qemu_$(Arch)_mnt'
+        targetFolder: '$(Build.SourcesDirectory)/run/qemu_$(TestArch)_mnt'
       displayName: Copy TA binary
 
     - script: |
@@ -147,21 +147,21 @@ jobs:
           az storage blob download \
           --account-name siliconqemu \
           --container-name qemuimages \
-          --name qemu_$(Arch).tar.gz \
-          --file $(Build.SourcesDirectory)/qemu_$(Arch).tar.gz
+          --name qemu_$(TestArch).tar.gz \
+          --file $(Build.SourcesDirectory)/qemu_$(TestArch).tar.gz
 
     - script: |
         cd qemu_build
-        sudo make $(Target)_test_$(Arch)
+        sudo make $(Target)_test_$(TestArch)
       timeoutInMinutes: 10
       displayName: Run Test
 
     - script: |
-        cd qemu_build/qemu_$(Arch)_run/logs
+        cd qemu_build/qemu_$(TestArch)_run/logs
         ls
-        cat $(Target)_$(Arch)_qemu.log
-        cat $(Target)_$(Arch)_tee.log
-        cat $(Target)_$(Arch)_ree.log
-        cat $(Target)_$(Arch)_results.log
+        cat $(Target)_$(TestArch)_qemu.log
+        cat $(Target)_$(TestArch)_tee.log
+        cat $(Target)_$(TestArch)_ree.log
+        cat $(Target)_$(TestArch)_results.log
       condition: always()
       displayName: Dump Logs
