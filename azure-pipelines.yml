@@ -126,6 +126,11 @@ jobs:
         artifactName: '$(Target)-$(Crypto)-$(TestArch)'
         downloadPath: '$(System.ArtifactsDirectory)'
 
+    - script: |
+        ls $(System.ArtifactsDirectory)
+        ls $(System.ArtifactsDirectory)/$(Target)-$(Crypto)-$(TestArch)
+        ls $(System.ArtifactsDirectory)/$(Target)-$(Crypto)-$(TestArch)/ta
+
     - task: CopyFiles@2
       inputs:
         sourceFolder: '$(System.ArtifactsDirectory)/$(Target)-$(Crypto)-$(TestArch)/ta'
