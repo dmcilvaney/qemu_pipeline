@@ -25,6 +25,13 @@ jobs:
           TestArch: 32
 
     steps:
+
+    - script: |
+        LOWER_CASE=$(echo "$(Target)" | tr '[:upper:]' '[:lower:]')
+        echo "##vso[task.setvariable variable=TargetLower]$LOWER_CASE"
+        echo $(TargetLower)
+      displayName: Fix case
+
     - script: |
         cd ..
         git clone https://github.com/ms-iot/optee_os.git
