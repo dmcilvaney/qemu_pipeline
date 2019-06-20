@@ -25,16 +25,6 @@ jobs:
           TestArch: 32
 
     steps:
-
-    - script: |
-        LOWER_CASE=$(echo "$(Target)" | tr '[:upper:]' '[:lower:]')
-        echo "##vso[task.setvariable variable=TargetLower]$LOWER_CASE"
-      displayName: Fix case
-
-    - script: |
-        echo $(TargetLower)
-      displayName: Test case
-
     - script: |
         cd ..
         git clone https://github.com/ms-iot/optee_os.git
@@ -128,8 +118,7 @@ jobs:
     - script: |
         LOWER_CASE=$(echo "$(Target)" | tr '[:upper:]' '[:lower:]')
         echo "##vso[task.setvariable variable=Target]$LOWER_CASE"
-        echo $(Target)
-      displayName: Fix case
+      displayName: Fix target case
 
     - script: |
         make -f build_tests.mk test_toolchains -j2
@@ -174,7 +163,7 @@ jobs:
 
     - script: |
         cd qemu_build
-        sudo make $(Target)_test_$(TestArch)
+        sudo make $(Target)_test_$(TestArch) QEMU_MOUNT_DIR=$(Build.SourcesDirectory)/run/qemu_$(TestArch)_mnt
       timeoutInMinutes: 10
       displayName: Run Test
 
