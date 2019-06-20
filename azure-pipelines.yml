@@ -78,19 +78,19 @@ jobs:
     strategy:
       matrix:
         TpmWolf:
-          Target: ftpm
+          Target: fTPM
           Crypto: CFG_FTPM_USE_WOLF=y
           TestArch: 32
         TpmOSSL:
-          Target: ftpm
+          Target: fTPM
           Crypto: CFG_FTPM_USE_WOLF=n
           TestArch: 32
         AuthvarsWolf:
-          Target: authvars
+          Target: AuthVars
           Crypto: CFG_AUTHVARS_USE_WOLF=y
           TestArch: 32
         AuthvarsOSSL:
-          Target: authvars
+          Target: AuthVars
           Crypto: CFG_AUTHVARS_USE_WOLF=n
           TestArch: 32
       
@@ -137,6 +137,12 @@ jobs:
         contents: '*.ta'
         targetFolder: '$(Build.SourcesDirectory)/run/qemu_$(TestArch)_mnt'
       displayName: Copy TA binary
+
+    - script: |
+        LOWER_CASE=$(echo "$(Target)" | tr '[:upper:]' '[:lower:]')
+        echo "##vso[task.setvariable variable=Target]$LOWER_CASE
+        echo $(Target)
+      displayName: Fix case
 
     - script: |
         sudo dpkg --add-architecture i386
