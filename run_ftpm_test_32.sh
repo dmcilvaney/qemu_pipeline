@@ -21,7 +21,7 @@ rm -f $REE_PIPE.in $REE_PIPE.out $TEE_PIPE.in $TEE_PIPE.out
 mkfifo $REE_PIPE.in $REE_PIPE.out $TEE_PIPE.in $TEE_PIPE.out
 
 REE_LOG=./logs/ftpm_32_ree.log
-TEE_LOG=./logs/ftpm_32_Tee.log
+TEE_LOG=./logs/ftpm_32_tee.log
 QEMU_LOG=./logs/ftpm_32_qemu.log
 RESULTS_LOG=./logs/ftpm_32_results.log
 

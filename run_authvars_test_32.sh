@@ -11,7 +11,7 @@ function cleanup {
 trap cleanup EXIT
 
 # Local files are available in /mnt/ci/
-TEST_COMMAND="cp /mnt/ci/*.ta /lib/optee_armtz && /mnt/ci/authvars_test_32/authvars_test selftest"
+TEST_COMMAND="cp /mnt/ci/*.ta /lib/optee_armtz && /mnt/ci/authvars_test_32/authvars_test bin"
 GOOD_RESULT="Summary: Total = 7, Passed = 6, Failed = 1, Skipped = 0"
 
 REE_PIPE=/tmp/ree_$RANDOM
@@ -21,7 +21,7 @@ rm -f $REE_PIPE.in $REE_PIPE.out $TEE_PIPE.in $TEE_PIPE.out
 mkfifo $REE_PIPE.in $REE_PIPE.out $TEE_PIPE.in $TEE_PIPE.out
 
 REE_LOG=./logs/authvars_32_ree.log
-TEE_LOG=./logs/authvars_32_Tee.log
+TEE_LOG=./logs/authvars_32_tee.log
 QEMU_LOG=./logs/authvars_32_qemu.log
 RESULTS_LOG=./logs/authvars_32_results.log
 

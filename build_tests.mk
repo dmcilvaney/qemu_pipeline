@@ -15,7 +15,7 @@ TEEC_EXPORT_PATH_32 ?= ./qemu_build/qemu_32/optee_client/out/export/usr
 TEEC_EXPORT_PATH_64 ?= ./qemu_build/qemu_64/optee_client/out/export/usr
 endif
 
-.PHONY: all test_32 test_64 $(TESTS_32) $(TESTS_64) clean
+.PHONY: all test_32 test_64 $(TESTS_32) $(TESTS_64) test_toolchains clean
 
 test_32: $(TESTS_32)
 test_64: $(TESTS_64)
@@ -52,6 +52,8 @@ optee_64:
 	then \
 	  $(MAKE) -C qemu_build $@; \
 	fi;
+
+test_toolchains: $(GCC_32_PATH) $(GCC_64_PATH)
 
 $(GCC_32_PATH):
 	if [ ! -f $(GCC_32)gcc ]; \
