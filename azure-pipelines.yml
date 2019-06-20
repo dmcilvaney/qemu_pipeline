@@ -29,8 +29,11 @@ jobs:
     - script: |
         LOWER_CASE=$(echo "$(Target)" | tr '[:upper:]' '[:lower:]')
         echo "##vso[task.setvariable variable=TargetLower]$LOWER_CASE"
-        echo $(TargetLower)
       displayName: Fix case
+
+    - script: |
+        echo $(TargetLower)
+      displayName: Test case
 
     - script: |
         cd ..
