@@ -10,19 +10,19 @@ jobs:
         TpmWolf:
           Target: fTPM
           Crypto: CFG_FTPM_USE_WOLF=y
-          Arch: 32
+          TestArch: 32
         TpmOSSL:
           Target: fTPM
           Crypto: CFG_FTPM_USE_WOLF=n
-          Arch: 32
+          TestArch: 32
         AuthvarsWolf:
           Target: AuthVars
           Crypto: CFG_AUTHVARS_USE_WOLF=y
-          Arch: 32
+          TestArch: 32
         AuthvarsOSSL:
           Target: AuthVars
           Crypto: CFG_AUTHVARS_USE_WOLF=n
-          Arch: 32
+          TestArch: 32
 
     steps:
     - script: |
@@ -79,19 +79,19 @@ jobs:
         TpmWolf:
           Target: ftpm
           Crypto: CFG_FTPM_USE_WOLF=y
-          Arch: 32
+          TestArch: 32
         TpmOSSL:
           Target: ftpm
           Crypto: CFG_FTPM_USE_WOLF=n
-          Arch: 32
+          TestArch: 32
         AuthvarsWolf:
           Target: authvars
           Crypto: CFG_AUTHVARS_USE_WOLF=y
-          Arch: 32
+          TestArch: 32
         AuthvarsOSSL:
           Target: authvars
           Crypto: CFG_AUTHVARS_USE_WOLF=n
-          Arch: 32
+          TestArch: 32
       
     dependsOn: BuildTA
 
