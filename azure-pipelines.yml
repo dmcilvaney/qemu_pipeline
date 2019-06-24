@@ -58,6 +58,7 @@ jobs:
 
         echo '##vso[task.setvariable variable=OPTEE_CC]CROSS_COMPILE'
         echo '##vso[task.setvariable variable=OPTEE_PLAT]vexpress-qemu_virt'
+        echo '##vso[task.setvariable variable=OPTEE_OUT]arm-plat-imx/export-ta_arm32'
       displayName: Configure/Download 32
       condition: eq(variables['TestArch'], '32')
 
@@ -67,7 +68,8 @@ jobs:
         tar xf gcc-linaro-7.2.1-2017.11-x86_64_aarch64-linux-gnu.tar.xz
 
         echo '##vso[task.setvariable variable=OPTEE_CC]CROSS_COMPILE64'
-        echo '##vso[task.setvariable variable=OPTEE_PLAT]vexpress-qemu_armv8a CFG_ARM64_core=y
+        echo '##vso[task.setvariable variable=OPTEE_PLAT]vexpress-qemu_armv8a CFG_ARM64_core=y'
+        echo '##vso[task.setvariable variable=OPTEE_OUT]FIXME'
       displayName: Configure/Download 64
       condition: eq(variables['TestArch'], '64')
     
@@ -79,7 +81,8 @@ jobs:
     - script: |
         cd ../MSRsec
         cd TAs/optee_ta/$(Target)
-        make $(Crypto) TA_CROSS_COMPILE=$(Build.SourcesDirectory)/$(CrossCompile) CROSS_COMPILE=$(Build.SourcesDirectory)/$(CrossCompile) TA_DEV_KIT_DIR=$(Build.SourcesDirectory)/../optee_os/out/arm-plat-imx/export-ta_arm32
+        ls $(Build.SourcesDirectory)/../optee_os/out/
+        make $(Crypto) TA_CROSS_COMPILE=$(Build.SourcesDirectory)/$(CrossCompile) CROSS_COMPILE=$(Build.SourcesDirectory)/$(CrossCompile) TA_DEV_KIT_DIR=$(Build.SourcesDirectory)/../optee_os/out/$(OPTEE_OUT)
       displayName: Build TA
 
     - task: CopyFiles@2
