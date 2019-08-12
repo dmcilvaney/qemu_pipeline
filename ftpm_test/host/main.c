@@ -68,32 +68,17 @@ SwapBytes32 (
   return (LowerBytes << 16 | HigherBytes);
 }
 
-int main(void)
+int selftest(TEEC_Context ctx, TEEC_Session sess)
 {
-	TEEC_Result res;
-	TEEC_Context ctx;
-	TEEC_Session sess;
-	TEEC_UUID uuid = TA_FTPM_UUID;
-	uint32_t err_origin;
 
 	uint8_t *SharedInput;
 	uint8_t *SharedOutput;
 	TEEC_Operation TeecOperation = {0};
 	TEEC_SharedMemory TeecSharedMem = {0};
-
-	/* Initialize a context connecting us to the TEE */
-	res = TEEC_InitializeContext(NULL, &ctx);
-	if (res != TEEC_SUCCESS)
-		errx(1, "TEEC_InitializeContext failed with code 0x%x", res);
-
-	res = TEEC_OpenSession(&ctx, &sess, &uuid,
-				   TEEC_LOGIN_PUBLIC, NULL, NULL, &err_origin);
-	if (res != TEEC_SUCCESS)
-		errx(1, "TEEC_Opensession failed with code 0x%x origin 0x%x",
-			res, err_origin);
-
 	TPM2_SELF_TEST_COMMAND            Cmd;
 	TPM2_SELF_TEST_RESPONSE           Res;
+	TEEC_Result res;
+	uint32_t err_origin;
 
 	Cmd.Header.tag         = SwapBytes16(TPM_ST_NO_SESSIONS);
 	Cmd.Header.paramSize   = SwapBytes32(sizeof(Cmd));
@@ -136,13 +121,53 @@ int main(void)
 	if (Res.Header.responseCode != TPM_RC_SUCCESS)
 		errx(1, "TPM failed with code 0x%x", Res.Header.responseCode);
 
-	/*
-	 * We're done with the TA, close the session and
-	 * destroy the context.
-	 *
-	 * The TA will print "Goodbye!" in the log when the
-	 * session is closed.
-	 */
+	return res;
+}
+
+int main(void)
+{
+	TEEC_Result res;
+	TEEC_Context ctx;
+	TEEC_Session sess;
+	TEEC_UUID uuid = TA_FTPM_UUID;
+	uint32_t err_origin;
+
+	/* Initialize a context connecting us to the TEE */
+	res = TEEC_InitializeContext(NULL, &ctx);
+	if (res != TEEC_SUCCESS)
+		errx(1, "TEEC_InitializeContext failed with code 0x%x", res);
+
+	res = TEEC_OpenSession(&ctx, &sess, &uuid,
+				   TEEC_LOGIN_PUBLIC, NULL, NULL, &err_origin);
+	if (res != TEEC_SUCCESS)
+		errx(1, "TEEC_Opensession failed with code 0x%x origin 0x%x",
+			res, err_origin);
+
+	res = selftest(ctx, sess);
+	if (res != TEEC_SUCCESS)
+		errx(1, "selftest failed with code 0x%x",
+			res);
+
+
+	TEEC_CloseSession(&sess);
+
+	TEEC_FinalizeContext(&ctx);
+
+	/* Initialize a context connecting us to the TEE */
+	res = TEEC_InitializeContext(NULL, &ctx);
+	if (res != TEEC_SUCCESS)
+		errx(1, "TEEC_InitializeContext failed with code 0x%x", res);
+
+	res = TEEC_OpenSession(&ctx, &sess, &uuid,
+				   TEEC_LOGIN_PUBLIC, NULL, NULL, &err_origin);
+	if (res != TEEC_SUCCESS)
+		errx(1, "TEEC_Opensession failed with code 0x%x origin 0x%x",
+			res, err_origin);
+
+	res = selftest(ctx, sess);
+	if (res != TEEC_SUCCESS)
+		errx(1, "selftest failed with code 0x%x",
+			res);
 
 	TEEC_CloseSession(&sess);
 

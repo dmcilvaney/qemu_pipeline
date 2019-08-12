@@ -45,13 +45,13 @@ $(TESTS_64): $(GCC_64_PATH) optee_64
 .PHONY: optee_32 optee_64
 
 optee_32:
-	if [ ! -d $(TEEC_EXPORT_PATH_32)]; \
+	if [ ! -d $(TEEC_EXPORT_PATH_32) ]; \
 	then \
 	  $(MAKE) -C qemu_build $@; \
 	fi;
 
 optee_64:
-	if [ ! -d $(TEEC_EXPORT_PATH_64)]; \
+	if [ ! -d $(TEEC_EXPORT_PATH_64) ]; \
 	then \
 	  $(MAKE) -C qemu_build $@; \
 	fi;
